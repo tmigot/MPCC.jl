@@ -15,7 +15,6 @@ notifications:
 codecov: true
 coveralls: true
 
-
 jobs:
   allow_failures:
    - julia: nightly
