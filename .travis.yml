@@ -12,8 +12,8 @@ julia:
 notifications:
   email: false
 
-codecov: true
-coveralls: true
+#codecov: true
+#coveralls: true
 
 jobs:
   allow_failures:
