@@ -1,0 +1,19 @@
+name = "MPCC"
+uuid = "0aaa5dc6-5b17-11ea-26af-6b0517bcf4f8"
+authors = ["tmigot <tangi.migot@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+NLPModels = "a4795742-8479-5a88-8948-cc11e1c8c1a6"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Stopping = "c4fe5a9e-e7fb-5c3d-89d5-7f405ab2214f"
+LinearOperators = "5c8ed15e-5a4c-59e4-a42b-c7e8811fb125"
+SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+FastClosures = "9aa1b823-49e4-5ca5-8b0f-3971ec8bab6a"
+
+[compat]
+NLPModels = "0.10.0, 1"
+julia = "^1.1.0"
+Stopping = "^0.2.0"
