@@ -1,0 +1,439 @@
+##############################################################################
+#
+# Specialization of AbstractMPCCModel when mp, G, H are given by NLPModels
+#
+# TODO:
+# - weird cons function
+# - jac, jacG, jacH
+# - check hess operators
+#
+##############################################################################
+
+"""
+Definit le type MPCC :
+min f(x)
+l <= x <= u
+lb <= c(x) <= ub
+0 <= G(x) _|_ H(x) >= 0
+"""
+mutable struct MPCCNLPs <: AbstractMPCCModel
+
+ mp :: AbstractNLPModel
+ G  :: AbstractNLPModel
+ H  :: AbstractNLPModel
+
+ meta :: MPCCModelMeta
+
+ counters :: MPCCCounters
+
+ function MPCCNLPs(mp  :: AbstractNLPModel;
+                   G   :: AbstractNLPModel = ADNLPModel(x->0, mp.meta.x0),
+                   H   :: AbstractNLPModel = ADNLPModel(x->0, mp.meta.x0),
+                   ncc :: Int64 = -1,
+                   x0  :: Vector = mp.meta.x0)
+
+  ncc = ncc == -1 ? G.meta.ncon : ncc
+
+  if G.meta.ncon != H.meta.ncon || (ncc != -1 && G.meta.ncon != ncc)
+   throw(error("Incompatible complementarity"))
+  end
+
+  n    = length(x0)
+  ncon = mp.meta.ncon
+
+  meta = MPCCModelMeta(n, x0 = x0, ncc = ncc, lccG = G.meta.lcon, lccH = H.meta.lcon,
+                              lvar = mp.meta.lvar, uvar = mp.meta.uvar,
+                              ncon = ncon,
+                              lcon = mp.meta.lcon, ucon = mp.meta.ucon)
+
+  return new(mp, G, H, meta, MPCCCounters())
+ end
+end
+
+############################################################################
+
+#Constructeurs supplémentaires :
+
+############################################################################
+"""
+Additional constructor of the MPCCNLPs:
+G and H as AbstractNLPModel
+Build a classical NLPModels using ADNLPModel
+"""
+function MPCCNLPs(f    :: Function,
+                  x0   :: Vector,
+                  G    :: AbstractNLPModel,
+                  H    :: AbstractNLPModel,
+                  lvar :: Vector,
+                  uvar :: Vector,
+                  c    :: Function,
+                  lcon :: Vector,
+                  ucon :: Vector)
+
+ mp = ADNLPModel(f, x0, lvar = lvar, uvar = uvar, c = c, lcon = lcon, ucon = ucon)
+
+ return MPCCNLPs(mp, G=G, H=H)
+end
+
+"""
+Additional constructor of the MPCCNLPs:
+Build a classical NLPModels, G and H using ADNLPModel
+"""
+function MPCCNLPs(f    :: Function,
+                  x0   :: Vector,
+                  G    :: Function,
+                  H    :: Function,
+                  lvar :: Vector,
+                  uvar :: Vector,
+                  c    :: Function,
+                  lcon :: Vector,
+                  ucon :: Vector)
+
+ nlpG = ADNLPModel(x -> 0, zeros(2), c = x -> G(x))
+ nlpH = ADNLPModel(x -> 0, zeros(2), c = x -> H(x))
+
+ return MPCCNLPs(f, x0, nlpG, nlpH, lvar, uvar, c, lcon, ucon)
+end
+
+############################################################################
+
+# Getteur
+
+############################################################################
+"""
+Evaluate f(x), the objective function at x.
+"""
+function obj(mod :: MPCCNLPs, x :: Vector)
+ increment!(mod, :neval_obj)
+ return obj(mod.mp, x)
+end
+
+"""
+Evaluate ∇f(x), the gradient of the objective function at x in place.
+"""
+function grad!(mod :: MPCCNLPs, x :: Vector, gx :: Vector)
+ increment!(mod, :neval_grad)
+ gx = grad(mod.mp, x)
+ return gx
+end
+
+"""
+Evaluate ``c(x)``, the constraints at `x`.
+"""
+function cons_nl!(mod :: MPCCNLPs, x :: Vector, c :: AbstractVector)
+ increment!(mod, :neval_cons)
+ c = cons(mod.mp, x)
+ return c
+end
+
+"""
+Evaluate ``G(x)``, the constraints at `x`.
+"""
+function consG!(mod :: MPCCNLPs, x :: Vector, c :: AbstractVector)
+ increment!(mod, :neval_consG)
+ if mod.meta.ncc > 0
+  c = cons(mod.G, x)
+ else
+  c = Float64[]
+ end
+
+ return c
+end
+
+"""
+Evaluate ``H(x)``, the constraints at `x`.
+"""
+function consH!(mod :: MPCCNLPs, x :: Vector, c :: AbstractVector)
+ increment!(mod, :neval_consH)
+ if mod.meta.ncc > 0
+  c = cons(mod.H, x)
+ else
+  c = Float64[]
+ end
+
+ return c
+end
+
+"""
+Evaluate ``[x, c(x)]``, the constraints at `x`.
+"""
+function cons_mp(mod :: MPCCNLPs, x :: Vector)
+
+ if mod.meta.ncon > 0
+  vnl = cons_nl(mod, x)
+ else
+  vnl = Float64[]
+ end
+
+ return vcat(x, vnl)
+end
+
+"""
+    Jx = jac(nlp, x)
+Evaluate ``[∇c(x), -∇G(x), -∇H(x)]``, the constraint's Jacobian at `x` as a sparse matrix.
+Size of the jacobian matrix: (ncon + 2 * ncc) x n
+"""
+function jac(mod :: MPCCNLPs, x :: Vector)
+  n, ncon, ncc = mod.meta.nvar, mod.meta.ncon, mod.meta.ncc
+
+ if ncon+ncc == 0
+
+  A = sparse(zeros(0,n))
+
+ else
+
+  if ncon > 0
+   J = jac_nl(mod, x)
+  else
+   J = sparse(zeros(0,n))
+  end
+
+  if ncc > 0
+   JG, JH = jacG(mod,x), jacH(mod,x)
+   A = [J;-JG;-JH]
+  else
+   A = J
+  end
+
+ end
+
+ return A
+end
+
+"""
+Evaluate ``∇c(x)``, the constraint's Jacobian at `x` as a sparse matrix.
+"""
+function jac_nl(mod :: MPCCNLPs, x :: Vector)
+ increment!(mod, :neval_jac)
+ return jac(mod.mp, x)
+end
+
+"""
+Evaluate ``∇G(x)``, the constraint's Jacobian at `x` as a sparse matrix.
+"""
+function jacG(mod :: MPCCNLPs, x :: Vector)
+ increment!(mod, :neval_jacG)
+ if mod.meta.ncc > 0
+  rslt = jac(mod.G, x)
+ else
+  rslt = Float64[]
+ end
+
+ return rslt
+end
+
+"""
+Evaluate ``∇H(x)``, the constraint's Jacobian at `x` as a sparse matrix.
+"""
+function jacH(mod :: MPCCNLPs, x :: Vector)
+ increment!(mod, :neval_jacH)
+ if mod.meta.ncc > 0
+  rslt = jac(mod.H, x)
+ else
+  rslt = Float64[]
+ end
+
+ return rslt
+end
+
+"""
+Jacobienne des contraintes actives à precmpcc près
+
+(Tangi: copie de colonne si contrainte d'égalité?)
+"""
+function jacl(mod :: MPCCNLPs, x :: Vector) #bad name
+ A, Il,Iu,Ig,Ih,IG,IH = jac_actif(mod, x, 0.0)
+ return A
+end
+
+function jac_actif(mod :: MPCCNLPs, x :: Vector, prec :: Float64)
+
+  n = mod.meta.nvar
+  ncc = mod.meta.ncc
+
+  Il = findall(z->z<=prec,abs.(x-mod.meta.lvar))
+  Iu = findall(z->z<=prec,abs.(x-mod.meta.uvar))
+  jl = zeros(n);jl[Il] .= 1.0;Jl=diagm(0 => jl);
+  ju = zeros(n);ju[Iu] .= 1.0;Ju=diagm(0 => ju);
+  IG=Int64[];IH=Int64[];Ig=Int64[];Ih=Int64[];
+
+ if mod.meta.ncon+ncc ==0
+
+  A=[]
+
+ else
+
+  if mod.meta.ncon > 0
+   c = cons_nl(mod,x)
+   J = jac_nl(mod, x)
+  else
+   c = Float64[]
+   J = sparse(zeros(0,2))
+  end
+
+  Ig=findall(z->z<=prec,abs.(c-mod.meta.lcon))
+  Ih=findall(z->z<=prec,abs.(c-mod.meta.ucon))
+
+  Jg, Jh = zeros(mod.meta.ncon,n), zeros(mod.meta.ncon,n)
+
+  Jg[Ig,1:n] = J[Ig,1:n]
+  Jh[Ih,1:n] = J[Ih,1:n]
+
+  if ncc>0
+
+   IG=findall(z->z<=prec,abs.(consG(mod,x)-mod.meta.lccG))
+   IH=findall(z->z<=prec,abs.(consH(mod,x)-mod.meta.lccH))
+
+   JG, JH = zeros(ncc, n), zeros(ncc, n)
+   JG[IG,1:n] = jacG(mod,x)[IG,1:n]
+   JH[IH,1:n] = jacH(mod,x)[IH,1:n]
+
+   A=[Jl;Ju;-Jg;Jh;-JG;-JH]'
+  else
+   A=[Jl;Ju;-Jg;Jh]'
+  end
+
+ end
+
+ return A, Il,Iu,Ig,Ih,IG,IH
+end
+
+"""
+    Jv = jnlprod(nlp, x, v, Jtv)
+Evaluate ``∇c(x)v``, the transposed-Jacobian-vector product at `x`.
+"""
+function jnlprod!(mod :: MPCCNLPs, x :: Vector, v :: Vector, Jv :: Vector)
+ return jnlprod!(mod.mp,x,v,Jv)
+end
+
+"""
+  JGv = jGprod!(nlp, x, v, Jv)
+Evaluate ``∇G(x)v``, the Jacobian-vector product at `x` in place.
+"""
+function jGprod!(mod :: MPCCNLPs, x :: AbstractVector, v :: AbstractVector, Jv :: AbstractVector)
+    increment!(mod, :neval_jGprod)
+    throw(NotImplementedError("jGprod!"))
+    return Jv
+end
+
+"""
+  JHv = jHprod!(nlp, x, v, Jv)
+Evaluate ``∇H(x)v``, the Jacobian-vector product at `x` in place.
+"""
+function jHprod!(mod :: MPCCNLPs, x :: AbstractVector, v :: AbstractVector, Jv :: AbstractVector)
+    increment!(mod, :neval_jHprod)
+    throw(NotImplementedError("jHprod!"))
+    return Jv
+end
+
+"""
+    Jtv = jtprod(nlp, x, v, Jtv)
+Evaluate ``∇c(x)^Tv``, the transposed-Jacobian-vector product at `x`.
+"""
+function jnltprodnl!(mod :: MPCCNLPs, x :: Vector, v :: Vector, Jv :: Vector)
+ increment!(mod, :neval_jtprod)
+ return jtprod!(mod.mp,x,v, Jv)
+end
+
+"""
+    Jtv = jtprodG(nlp, x, v, Jtv)
+Evaluate ``∇G(x)^Tv``, the transposed-Jacobian-vector product at `x`
+"""
+function jGtprod!(mod :: MPCCNLPs, x :: Vector, v :: Vector, Jv :: Vector)
+ increment!(mod, :neval_jGtprod)
+ if mod.meta.ncc > 0
+  Jv = jtprod(mod.G,x,v)
+ else
+  Jv = Float64[]
+ end
+
+ return Jv
+end
+
+"""
+    Jtv = jtprodH(nlp, x, v, Jtv)
+Evaluate ``∇H(x)^Tv``, the transposed-Jacobian-vector product at `x`
+"""
+function jHtprod!(mod :: MPCCNLPs, x :: Vector, v :: Vector, Jv :: Vector)
+ increment!(mod, :neval_jHtprod)
+ if mod.meta.ncc > 0
+  Jv = jtprod(mod.H,x,v)
+ else
+  Jv = Float64[]
+ end
+
+ return Jv
+end
+
+"""
+    Hx = hess(nlp, x; obj_weight=1.0)
+Evaluate the objective Hessian at `x` as a sparse matrix,
+with objective function scaled by `obj_weight`.
+Only the lower triangle is returned.
+"""
+function hess(mod :: MPCCNLPs, x :: Vector ; obj_weight = 1.0, y = zeros)
+ increment!(mod, :neval_hess)
+ if y != zeros
+  return hess(mod.mp, x, obj_weight = obj_weight, y = y)
+ else
+  return hess(mod.mp, x)
+ end
+end
+
+function hessnl(mod :: MPCCNLPs, x :: Vector ; obj_weight = 1.0, y = zeros)
+ return hess(mod.mp,x; obj_weight = obj_weight, y = y)
+end
+
+function hessG(mod :: MPCCNLPs, x :: Vector ; obj_weight = 1.0, y = zeros)
+ increment!(mod, :neval_hessG)
+ if mod.meta.ncc > 0
+  rslt = hess(mod.G,x; obj_weight = obj_weight, y = y)
+ else
+  rslt = zeros(0,0)
+ end
+
+ return rslt
+end
+
+function hessH(mod :: MPCCNLPs, x :: Vector ; obj_weight = 1.0, y = zeros)
+ increment!(mod, :neval_hessH)
+ if mod.meta.ncc > 0
+  rslt = hess(mod.H,x; obj_weight = obj_weight, y = y)
+ else
+  rslt = zeros(0,0)
+ end
+
+ return rslt
+end
+
+"""
+    vals = hess_coord(nlp, x; obj_weight=1.0)
+Evaluate the objective Hessian at `x` in sparse coordinate format,
+with objective function scaled by `obj_weight`.
+Only the lower triangle is returned.
+"""
+function hess_coord(mod :: MPCCNLPs, x :: AbstractVector; obj_weight = 1.0,
+      y :: AbstractVector = zeros(nlp.meta.ncon))
+  Hx = hess(mod, x, obj_weight=obj_weight, y=y)
+  if isa(Hx, SparseMatrixCSC)
+    return findnz(Hx, SparseMatrixCSC)
+  else
+    #I = findall(!iszero, Hx) #findall only after 7.0
+    #return (getindex.(I, 1), getindex.(I, 2), Hx[I])
+    return findnz(sparse(Hx))
+  end
+end
+
+"""
+    Hv = hprod!(nlp, x, y, v, Hv; obj_weight=1.0)
+Evaluate the product of the Lagrangian Hessian at `(x,y)` with the vector `v` in
+place, with objective function scaled by `obj_weight`, where the Lagrangian Hessian is
+LAGRANGIAN_HESSIAN.
+"""
+function hprod!(mod :: MPCCNLPs, x :: AbstractVector, v :: AbstractVector, Hv :: AbstractVector;
+    obj_weight = 1.0, y :: AbstractVector = zeros(mod.meta.ncon+2*mod.meta.ncc))
+  increment!(mod, :neval_hprod)
+  throw(NotImplementedError("hprod!"))
+  Hv = hprod(nlp.X, x, v; obj_weight=0., y=y) + obj_weight*v.*eye(length(nlp.xk))
+  return Hv
+end
