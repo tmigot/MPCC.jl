@@ -1,11 +1,10 @@
 using LinearAlgebra, LinearOperators, SparseArrays, Printf, Test
 
-using Main.MPCC
+using MPCC
 
 using JuMP
 using NLPModelsJuMP
 
-#import NLPModels: ADNLPModel
 using NLPModels
 
 include("problems.jl")
