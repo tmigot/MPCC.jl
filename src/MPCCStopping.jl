@@ -170,28 +170,27 @@ function fill_in!(stp     :: MPCCStopping,
      gJx = Jx == nothing ? jac_nl(stp.pb, x)  : Jx
      gcx = cx == nothing ? cons_nl(stp.pb, x) : cx
  else
-     gJx = stp.current_state.Jx
-     gcx = stp.current_state.cx
+     gJx = Jx
+     gcx = cx
  end
 
+ gcGx, gcHx, gJGx, gJHx = cGx, cHx, JGx, JHx
  if stp.pb.meta.ncc > 0
      gcGx = cGx == nothing ? consG(stp.pb, x) : cGx
      gcHx = cHx == nothing ? consH(stp.pb, x) : cHx
      gJGx = JGx == nothing ? jacG(stp.pb, x)  : JGx
      gJHx = JHx == nothing ? jacH(stp.pb, x)  : JHx
- else
-     gcGx, gcHx, gJGx, gJHx = cGx, cHx, JGx, JHx
  end
 
  #update the Lagrange multiplier if one of the 2 is asked
- if (stp.pb.meta.ncc > 0 || stp.pb.meta.ncon > 0 || has_bounds(stp.pb)) && (lambdaG == nothing || lambdaH == nothing ||lambda == nothing || mu == nothing)
-     lb, lc = _compute_mutliplier(stp.pb.mp, x, ggx, gcx, gJx)
-     lG, lH = lambdaG, lambdaH
-     printstyled("Warning: fill_in compute MPCC multipliers is not implemented.\n", color = :red)
+ #if (stp.pb.meta.ncc > 0 && stp.pb.meta.ncon > 0 && has_bounds(stp.pb)) && (lambdaG == nothing || lambdaH == nothing ||lambda == nothing || mu == nothing)
+ if (stp.pb.meta.ncc > 0) && (lambdaG == nothing || lambdaH == nothing ||lambda == nothing || mu == nothing)
+  lb, lc, lG, lH = _compute_mutliplier(stp.pb, x, ggx, gcx, gJx, gcGx, gJGx, gcHx, gJHx)
+ #elseif (stp.pb.meta.ncon > 0 && has_bounds(stp.pb)) && (lambda == nothing || mu == nothing)
  elseif (stp.pb.meta.ncon > 0 || has_bounds(stp.pb)) && (lambda == nothing || mu == nothing)
   lb, lc = _compute_mutliplier(stp.pb.mp, x, ggx, gcx, gJx)
   lG, lH = lambdaG, lambdaH
-elseif  stp.pb.meta.ncon == 0 && !has_bounds(stp.pb) && lambda == nothing
+ elseif  stp.pb.meta.ncon == 0 && !has_bounds(stp.pb) && lambda == nothing
   lb, lc = mu, stp.current_state.lambda
   lG, lH = lambdaG, lambdaH
  else

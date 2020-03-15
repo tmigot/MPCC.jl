@@ -76,6 +76,10 @@ include("MPCCNLPs.jl")
 
 export MPCCNLPs, jacl, jac_actif
 
+include("BPMPCC.jl")
+
+export BPMPCCModel
+
 include("NLMPCC.jl")
 
 export NLMPCC

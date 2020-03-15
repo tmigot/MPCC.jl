@@ -4,7 +4,6 @@ using MPCC
 
 using JuMP
 using NLPModelsJuMP
-
 using NLPModels
 
 include("problems.jl")
@@ -24,6 +23,9 @@ include("run_test_mpccnlps.jl")
 printstyled("passed ✓ \n", color = :green)
 printstyled("NLMPCC tests... ")
 include("test-mpcc-nlmpcc.jl")
+printstyled("passed ✓ \n", color = :green)
+printstyled("Bilevel Programming MPCC tests... ")
+include("run_test_bpmpcc.jl")
 printstyled("passed ✓ \n", color = :green)
 printstyled("MPCCAtX tests... ")
 include("test-mpcc-state.jl")

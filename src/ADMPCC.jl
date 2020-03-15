@@ -256,7 +256,7 @@ function hess_coord!(nlp :: ADMPCCModel, x :: AbstractVector, y :: AbstractVecto
 end
 
 function hessG(nlp :: ADMPCCModel, x :: AbstractVector, y :: AbstractVector)
-  increment!(nlp, :neval_hess)
+  increment!(nlp, :neval_hessG)
   ℓ(x) = dot(nlp.G(x), y)
   Hx = ForwardDiff.hessian(ℓ, x)
   return tril(Hx)

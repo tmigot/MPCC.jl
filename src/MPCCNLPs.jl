@@ -103,7 +103,7 @@ end
 """
 Evaluate f(x), the objective function at x.
 """
-function obj(mod :: MPCCNLPs, x :: Vector)
+function obj(mod :: MPCCNLPs, x :: AbstractVector)
  increment!(mod, :neval_obj)
  return obj(mod.mp, x)
 end
@@ -111,7 +111,7 @@ end
 """
 Evaluate ∇f(x), the gradient of the objective function at x in place.
 """
-function grad!(mod :: MPCCNLPs, x :: Vector, gx :: Vector)
+function grad!(mod :: MPCCNLPs, x :: Vector, gx :: AbstractVector)
  increment!(mod, :neval_grad)
  gx = grad(mod.mp, x)
  return gx
@@ -157,7 +157,7 @@ end
 """
 Evaluate ``[x, c(x)]``, the constraints at `x`.
 """
-function cons_mp(mod :: MPCCNLPs, x :: Vector)
+function cons_mp(mod :: MPCCNLPs, x :: AbstractVector)
 
  if mod.meta.ncon > 0
   vnl = cons_nl(mod, x)
@@ -173,7 +173,7 @@ end
 Evaluate ``[∇c(x), -∇G(x), -∇H(x)]``, the constraint's Jacobian at `x` as a sparse matrix.
 Size of the jacobian matrix: (ncon + 2 * ncc) x n
 """
-function jac(mod :: MPCCNLPs, x :: Vector)
+function jac(mod :: MPCCNLPs, x :: AbstractVector)
   n, ncon, ncc = mod.meta.nvar, mod.meta.ncon, mod.meta.ncc
 
  if ncon+ncc == 0
@@ -203,7 +203,7 @@ end
 """
 Evaluate ``∇c(x)``, the constraint's Jacobian at `x` as a sparse matrix.
 """
-function jac_nl(mod :: MPCCNLPs, x :: Vector)
+function jac_nl(mod :: MPCCNLPs, x :: AbstractVector)
  increment!(mod, :neval_jac)
  return jac(mod.mp, x)
 end
@@ -211,7 +211,7 @@ end
 """
 Evaluate ``∇G(x)``, the constraint's Jacobian at `x` as a sparse matrix.
 """
-function jacG(mod :: MPCCNLPs, x :: Vector)
+function jacG(mod :: MPCCNLPs, x :: AbstractVector)
  increment!(mod, :neval_jacG)
  if mod.meta.ncc > 0
   rslt = jac(mod.G, x)
@@ -225,7 +225,7 @@ end
 """
 Evaluate ``∇H(x)``, the constraint's Jacobian at `x` as a sparse matrix.
 """
-function jacH(mod :: MPCCNLPs, x :: Vector)
+function jacH(mod :: MPCCNLPs, x :: AbstractVector)
  increment!(mod, :neval_jacH)
  if mod.meta.ncc > 0
   rslt = jac(mod.H, x)
@@ -365,75 +365,105 @@ function jHtprod!(mod :: MPCCNLPs, x :: Vector, v :: Vector, Jv :: Vector)
  return Jv
 end
 
-"""
-    Hx = hess(nlp, x; obj_weight=1.0)
-Evaluate the objective Hessian at `x` as a sparse matrix,
-with objective function scaled by `obj_weight`.
-Only the lower triangle is returned.
-"""
-function hess(mod :: MPCCNLPs, x :: Vector ; obj_weight = 1.0, y = zeros)
+function hess(mod :: MPCCNLPs, x :: Vector ; obj_weight = 1.0)
  increment!(mod, :neval_hess)
- if y != zeros
-  return hess(mod.mp, x, obj_weight = obj_weight, y = y)
- else
-  return hess(mod.mp, x)
- end
+ return hess(mod.mp, x, obj_weight = obj_weight)
+end
+
+function hess(mod :: MPCCNLPs, x :: AbstractVector, y :: AbstractVector; obj_weight = 1.0)
+ increment!(mod, :neval_hess)
+ return hess(mod.mp, x, y, obj_weight = obj_weight)
 end
 
 function hessnl(mod :: MPCCNLPs, x :: Vector ; obj_weight = 1.0, y = zeros)
- return hess(mod.mp,x; obj_weight = obj_weight, y = y)
+    printstyled("Do we come here?", color = :red)
+ return hess(mod.mp,x,y; obj_weight = obj_weight)
 end
 
-function hessG(mod :: MPCCNLPs, x :: Vector ; obj_weight = 1.0, y = zeros)
+function hessG(mod :: MPCCNLPs, x :: Vector ; obj_weight = 1.0)
  increment!(mod, :neval_hessG)
  if mod.meta.ncc > 0
-  rslt = hess(mod.G,x; obj_weight = obj_weight, y = y)
+  rslt = hess(mod.G, x, obj_weight = obj_weight)
  else
   rslt = zeros(0,0)
  end
-
  return rslt
 end
 
-function hessH(mod :: MPCCNLPs, x :: Vector ; obj_weight = 1.0, y = zeros)
+function hessG(mod :: MPCCNLPs, x :: AbstractVector, y :: AbstractVector; obj_weight = 1.0)
+ increment!(mod, :neval_hess)
+ if mod.meta.ncc > 0
+  rslt = hess(mod.G, x, y, obj_weight = obj_weight)
+ else
+  rslt = zeros(0,0)
+ end
+ return rslt
+end
+
+function hessH(mod :: MPCCNLPs, x :: Vector ; obj_weight = 1.0)
  increment!(mod, :neval_hessH)
  if mod.meta.ncc > 0
-  rslt = hess(mod.H,x; obj_weight = obj_weight, y = y)
+  rslt = hess(mod.H, x, obj_weight = obj_weight)
  else
   rslt = zeros(0,0)
  end
-
  return rslt
 end
 
-"""
-    vals = hess_coord(nlp, x; obj_weight=1.0)
-Evaluate the objective Hessian at `x` in sparse coordinate format,
-with objective function scaled by `obj_weight`.
-Only the lower triangle is returned.
-"""
-function hess_coord(mod :: MPCCNLPs, x :: AbstractVector; obj_weight = 1.0,
-      y :: AbstractVector = zeros(nlp.meta.ncon))
-  Hx = hess(mod, x, obj_weight=obj_weight, y=y)
-  if isa(Hx, SparseMatrixCSC)
-    return findnz(Hx, SparseMatrixCSC)
-  else
-    #I = findall(!iszero, Hx) #findall only after 7.0
-    #return (getindex.(I, 1), getindex.(I, 2), Hx[I])
-    return findnz(sparse(Hx))
-  end
+function hessH(mod :: MPCCNLPs, x :: AbstractVector, y :: AbstractVector; obj_weight = 1.0)
+ increment!(mod, :neval_hessH)
+ if mod.meta.ncc > 0
+  rslt = hess(mod.H, x, y, obj_weight = obj_weight)
+ else
+  rslt = zeros(0,0)
+ end
+ return rslt
 end
 
-"""
-    Hv = hprod!(nlp, x, y, v, Hv; obj_weight=1.0)
-Evaluate the product of the Lagrangian Hessian at `(x,y)` with the vector `v` in
-place, with objective function scaled by `obj_weight`, where the Lagrangian Hessian is
-LAGRANGIAN_HESSIAN.
-"""
-function hprod!(mod :: MPCCNLPs, x :: AbstractVector, v :: AbstractVector, Hv :: AbstractVector;
-    obj_weight = 1.0, y :: AbstractVector = zeros(mod.meta.ncon+2*mod.meta.ncc))
-  increment!(mod, :neval_hprod)
-  throw(NotImplementedError("hprod!"))
-  Hv = hprod(nlp.X, x, v; obj_weight=0., y=y) + obj_weight*v.*eye(length(nlp.xk))
+function hess_structure!(mod :: MPCCNLPs, rows :: AbstractVector{<: Integer}, cols :: AbstractVector{<: Integer})
+  n = mod.meta.nvar
+  I = ((i,j) for i = 1:n, j = 1:n if i ≥ j)
+  rows .= getindex.(I, 1)
+  cols .= getindex.(I, 2)
+  return rows, cols
+end
+
+function hess_coord!(nlp :: MPCCNLPs, x :: AbstractVector, vals :: AbstractVector; obj_weight :: Real = one(eltype(x)))
+  increment!(nlp, :neval_hess)
+  Hx = hess(mod, x, obj_weight=obj_weight)
+  k = 1
+  for j = 1 : nlp.meta.nvar
+    for i = j : nlp.meta.nvar
+      vals[k] = Hx[i, j]
+      k += 1
+    end
+  end
+  return vals
+end
+
+function hess_coord!(nlp :: MPCCNLPs, x :: AbstractVector, y :: AbstractVector, vals :: AbstractVector; obj_weight :: Real = one(eltype(x)))
+  increment!(nlp, :neval_hess)
+  Hx = hess(mod, x, y, obj_weight=obj_weight)
+  k = 1
+  for j = 1 : nlp.meta.nvar
+    for i = j : nlp.meta.nvar
+      vals[k] = Hx[i, j]
+      k += 1
+    end
+  end
+  return vals
+end
+
+function hprod!(mod :: MPCCNLPs, x :: AbstractVector, v :: AbstractVector, Hv :: AbstractVector; obj_weight :: Real = one(eltype(x)))
+  increment!(nlp, :neval_hprod)
+  Hx = hess(mod, x, obj_weight = obj_weight)
+  Hv = (Hx + Hx' - diagm(0 => diag(Hx))) * v
+  return Hv
+end
+
+function hprod!(mod :: MPCCNLPs, x :: AbstractVector, y :: AbstractVector, v :: AbstractVector, Hv :: AbstractVector; obj_weight :: Real = one(eltype(x)))
+  increment!(nlp, :neval_hprod)
+  Hx = hess(mod, x, y, obj_weight = obj_weight)
+  Hv = (Hx + Hx' - diagm(0 => diag(Hx))) * v
   return Hv
 end

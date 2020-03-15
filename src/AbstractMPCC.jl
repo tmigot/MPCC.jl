@@ -455,12 +455,12 @@ function jtprod(nlp::AbstractMPCCModel, x::AbstractVector, v::AbstractVector)
   return jtprod!(nlp, x, v, Jtv)
 end
 """
-    Jtv = jtprodnl(nlp, x, v, Jtv)
+    Jtv = jnltprod(nlp, x, v, Jtv)
 Evaluate ``[∇c(x), -∇G(x), -∇H(x)]v``, the transposed-Jacobian-vector product at `x`.
 """
-function jtprodnl(nlp::AbstractMPCCModel, x::AbstractVector, v::AbstractVector)
+function jnltprod(nlp::AbstractMPCCModel, x::AbstractVector, v::AbstractVector)
   Jtv = similar(x)
-  return jtprodnl!(nlp, x, v, Jtv)
+  return jnltprod!(nlp, x, v, Jtv)
 end
 """
     JGtv = jGtprod(nlp, x, v, Jtv)
@@ -821,6 +821,24 @@ LAGRANGIAN_HESSIAN.
 function hprod(nlp::AbstractMPCCModel, x::AbstractVector, y::AbstractVector, v::AbstractVector; obj_weight::Real=one(eltype(x)))
   Hv = similar(x)
   return hprod!(nlp, x, y, v, Hv; obj_weight=obj_weight)
+end
+
+"""
+    Hv = hGprod(nlp, x, y, v)
+Evaluate the product of the G Hessian at `(x,y)` with the vector `v`.
+"""
+function hGprod(nlp::AbstractMPCCModel, x::AbstractVector, y::AbstractVector, v::AbstractVector)
+  Hv = similar(x)
+  return hGprod!(nlp, x, y, v, Hv)
+end
+
+"""
+    Hv = hHprod(nlp, x, y, v)
+Evaluate the product of the G Hessian at `(x,y)` with the vector `v`.
+"""
+function hHprod(nlp::AbstractMPCCModel, x::AbstractVector, y::AbstractVector, v::AbstractVector)
+  Hv = similar(x)
+  return hHprod!(nlp, x, y, v, Hv)
 end
 
 """

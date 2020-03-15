@@ -75,12 +75,18 @@ stop_w = MPCCStopping(test1, WStat, MPCCAtX(x0, zeros(nlp2.meta.ncon)))
 stop_s = MPCCStopping(test1, SStat, MPCCAtX(x0, zeros(nlp2.meta.ncon)))
 Wpoint, Spoint = zeros(2), [0.0, 1.0]
 fill_in!(stop_w, Wpoint)
-fill_in!(stop_s, Spoint)
+@test stop_w.current_state.lambdaG == [1.0]
+@test stop_w.current_state.lambdaH == [-1.0]
 #lambdaW = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, -1.0]
-update_and_stop!(stop_w, lambdaG = [1.0], lambdaH = [-1.0])
+#update_and_stop!(stop_w, lambdaG = [1.0], lambdaH = [-1.0])
+stop!(stop_w)
 @test status(stop_w) == :Optimal
+fill_in!(stop_s, Spoint)
+@test stop_s.current_state.lambdaG == [1.0]
+@test stop_s.current_state.lambdaH == [0.0]
 #lambdaS = [0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0]
-update_and_stop!(stop_s, lambdaG = [1.0], lambdaH = [0.0])
+#update_and_stop!(stop_s, lambdaG = [1.0], lambdaH = [0.0])
+stop!(stop_s)
 @test status(stop_s) == :Optimal
 reinit!(stop_s)
 stop_s.optimality_check = WStat

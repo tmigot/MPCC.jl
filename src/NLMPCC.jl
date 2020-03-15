@@ -7,7 +7,7 @@ s.t. 	l <= x <= u
 
 with
 
-cnl(x) := c(x),G(x),H(x),G(x)H(x)
+cnl(x) := c(x),G(x),H(x),G(x).*H(x)
 """
 mutable struct NLMPCC <: AbstractNLPModel
 
@@ -21,10 +21,8 @@ mutable struct NLMPCC <: AbstractNLPModel
  function NLMPCC(mod     :: AbstractMPCCModel;
                   x      :: Vector = mod.meta.x0)
 
-  ncc = mod.meta.ncc
-
-  n = mod.meta.nvar
-
+  n, ncc = mod.meta.nvar, mod.meta.ncc
+  ncon = maximum([length(mod.meta.lcon); length(mod.meta.ucon); length(mod.meta.y0)])
   new_lcon = vcat(mod.meta.lcon,
                   mod.meta.lccG,
                   mod.meta.lccH,
@@ -41,116 +39,124 @@ mutable struct NLMPCC <: AbstractNLPModel
  end
 end
 
-############################################################################
-
-# Getteur
-
-############################################################################
-
-function obj(nlp :: NLMPCC, x :: Vector)
+function obj(nlp :: NLMPCC, x ::  AbstractVector)
+ increment!(nlp, :neval_obj)
  return obj(nlp.mod, x)
 end
 
-function grad!(nlp :: NLMPCC, x :: Vector, gx :: Vector)
+function grad!(nlp :: NLMPCC, x :: Vector, gx :: AbstractVector)
+ increment!(nlp, :neval_grad)
  return grad!(nlp.mod, x, gx)
 end
 
-#########################################################
-#
-# Return the vector of the constraints
-# lb <= x <= ub,
-# lc <= c(x) <= uc,
-# lccG <= G(x), lccH <= H(x),
-# G(x).*H(x) <= 0
-#
-#########################################################
 function cons!(nlp :: NLMPCC, x :: AbstractVector, c :: AbstractVector)
-  c = cons(nlp.mod, x)
+  increment!(nlp, :neval_cons)
+  Gx, Hx = consG(nlp.mod, x), consH(nlp.mod, x)
+  c[1:nlp.meta.ncon] = vcat(cons_nl(nlp.mod, x), Gx, Hx, Gx .* Hx)
   return c
 end
 
-#########################################################
-#
-# Return the jacobian matrix (ncon+2*ncc x n)
-# [Jc(x), -JG(x), -JH(x)]
-#
-#########################################################
-
-function jac(nlp :: NLMPCC, x :: Vector)
-
- A = vcat(jac_nl(nlp.mod,x),jacG(nlp.mod,x),jacH(nlp.mod,x),diag(consH(nlp.mod,x))*jacG(nlp.mod,x)+diag(consG(nlp.mod,x))*jacH(nlp.mod,x))
+function jac(nlp :: NLMPCC, x :: AbstractVector)
+ increment!(nlp, :neval_jac)
+ JGx, JHx = jacG(nlp.mod,x),   jacH(nlp.mod,x)
+ Gx,  Hx  = consG(nlp.mod, x), consH(nlp.mod, x)
+ A = vcat(jac_nl(nlp.mod,x), JGx, JHx, diagm(0 => Hx) * JGx + diagm(0 => Gx) * JHx)
 
  return A
 end
 
-function jac_coord(nlp :: NLMPCC, x :: Vector)
- return findnz(jac(nlp.mod, x))
+function jac_coord!(nlp :: NLMPCC, x :: AbstractVector, vals ::AbstractVector)
+ Jx = jac(nlp, x) #findnz(jac(nlp.mod, x))
+ m, n = size(Jx)
+ vals[1 : n*m] .= Jx[:]
+ return vals
 end
 
-function jprod(nlp :: NLMPCC, x :: Vector, v :: Vector)
-  return jac(nlp,x)*v
+function jac_structure!(nlp :: NLMPCC, rows :: AbstractVector{<:Integer}, cols :: AbstractVector{<:Integer})
+ m, n = nlp.meta.ncon, nlp.meta.nvar
+ I = ((i,j) for i = 1:m, j = 1:n)
+ rows[1 : n*m] .= getindex.(I, 1)[:]
+ cols[1 : n*m] .= getindex.(I, 2)[:]
+ return rows, cols
 end
 
 function jprod!(nlp :: NLMPCC, x :: AbstractVector, v :: AbstractVector, Jv :: AbstractVector)
-  Jv = jprod(mod, x, v)
+  increment!(nlp, :neval_jprod)
+  Jv = jac(nlp, x) * v
   return Jv
 end
 
-function jtprod(nlp :: NLMPCC, x :: Vector, v :: Vector)
- return jac(nlp,x)'*v
-end
-
 function jtprod!(nlp :: NLMPCC, x :: AbstractVector, v :: AbstractVector, Jtv :: AbstractVector)
-  Jtv = jtprod(mod, x, v)
+  increment!(nlp, :neval_jtprod)
+  Jtv = jac(nlp,x)' * v
   return Jtv
 end
 
-function hess(nlp :: NLMPCC, x :: Vector ; obj_weight = 1.0, y = zeros)
-
- if y != zeros && nlp.mod.meta.ncc >0
-  ncc, nlc = nlp.mod.meta.ncc, nlp.mod.meta.ncon
-  Hx=hessnl(nlp.mod, x, obj_weight = obj_weight, y = y[1:nlc])
-  HG=hessG(nlp.mod,x,obj_weight=0.0,y=y[nlc+1:ncc])
-  HH=hessH(nlp.mod,x,obj_weight=0.0,y=y[nlc+ncc+1:nlc+2*ncc])
-  JGJH=jacG(nlp.mod,x)'*jacH(nlp.mod,x)
-  GGH=hessG(nlp.mod,x,obj_weight=0.0,y=consH(nlp.mod,x).*y[nlc+2*ncc+1:nlc+3*ncc])
-  HHG=hessG(nlp.mod,x,obj_weight=0.0,y=consH(nlp.mod,x).*y[nlc+2*ncc+1:nlc+3*ncc])
-  rslt = Hx+HG+HH+2*JGJH+GGH+HHG
- elseif y != zeros
-  Hx=hessnl(nlp.mod, x, obj_weight = obj_weight, y = y)
-  #HG=hessG(nlp.mod,x,obj_weight=0.0)
-  #HH=hessH(nlp.mod,x,obj_weight=0.0)
-  #JGJH=jacG(nlp.mod,x)'*jacH(nlp.mod,x)
-  #GGH=hessG(nlp.mod,x,obj_weight=0.0,y=consH(nlp.mod,x))
-  #HHG=hessG(nlp.mod,x,obj_weight=0.0,y=consH(nlp.mod,x))
-  rslt = Hx
-else #y == zeros
-  rslt = hess(nlp.mod, x)
- end
-
- return rslt
+function hess(nlp :: NLMPCC, x :: AbstractVector; obj_weight :: Real = one(eltype(x)))
+  increment!(nlp, :neval_hess)
+  Hx = hess(nlp.mod, x, obj_weight = obj_weight)
+  return tril(Hx)
 end
 
-function hess_coord(nlp :: NLMPCC, x :: AbstractVector; obj_weight = 1.0,
-      y :: AbstractVector = zeros(nlp.meta.ncon))
-  Hx = hess(nlp, x, obj_weight=obj_weight, y=y)
-  if isa(Hx, SparseMatrixCSC)
-    return findnz(Hx) #findnz(Hx, SparseMatrixCSC)
-  else
-    I = findall(!iszero, Hx)
-    return (getindex.(I, 1), getindex.(I, 2), Hx[I])
-    #return findnz(sparse(Hx))
+function hess(nlp :: NLMPCC, x :: AbstractVector, y :: AbstractVector; obj_weight :: Real = one(eltype(x)))
+  increment!(nlp, :neval_hess)
+  ncc, nlc, nvar = nlp.mod.meta.ncc, nlp.mod.meta.ncon, nlp.mod.meta.nvar
+  JGx, JHx = jacG(nlp.mod,x),   jacH(nlp.mod,x)
+  Gx,  Hx  = consG(nlp.mod, x), consH(nlp.mod, x)
+  lphi = y[nlc+2*ncc+1:nlc+3*ncc]
+  ny = vcat(y[1:nlc], y[nlc+1:nlc+ncc] - lphi .* Hx, y[nlc+ncc+1:nlc+2*ncc] - lphi .* Gx)
+  Hx = hess(nlp.mod, x, ny, obj_weight = obj_weight)
+  for i=1:ncc
+   Hx += lphi[i] * (JGx[i,:] * JHx[i,:]' + JHx[i,:] * JGx[i,:]')
   end
+  return tril(Hx)
 end
 
-function hprod(nlp :: NLMPCC, x :: AbstractVector, v :: AbstractVector;
-    obj_weight = 1.0, y :: AbstractVector = zeros(nlp.meta.ncon))
- return hess(nlp, x, obj_weight=obj_weight,y=y)*v
+function hess_structure!(nlp :: NLMPCC, rows :: AbstractVector{<: Integer}, cols :: AbstractVector{<: Integer})
+  n = nlp.meta.nvar
+  I = ((i,j) for i = 1:n, j = 1:n if i ≥ j)
+  rows[1 : nlp.meta.nnzh] .= getindex.(I, 1)
+  cols[1 : nlp.meta.nnzh] .= getindex.(I, 2)
+  return rows, cols
 end
 
-function hprod!(nlp :: NLMPCC, x :: AbstractVector, v :: AbstractVector, Hv :: AbstractVector;
-    obj_weight = 1.0, y :: AbstractVector = zeros(nlp.meta.ncon))
-  Hv = hess(nlp, x, obj_weight=obj_weight,y=y)*v
+function hess_coord!(nlp :: NLMPCC, x :: AbstractVector, vals :: AbstractVector; obj_weight :: Real = one(eltype(x)))
+  increment!(nlp, :neval_hess)
+  Hx = hess(nlp, x, obj_weight=obj_weight)
+  k = 1
+  for j = 1 : nlp.meta.nvar
+    for i = j : nlp.meta.nvar
+      vals[k] = Hx[i, j]
+      k += 1
+    end
+  end
+  return vals
+end
+
+function hess_coord!(nlp :: NLMPCC, x :: AbstractVector, y :: AbstractVector, vals :: AbstractVector; obj_weight :: Real = one(eltype(x)))
+  increment!(nlp, :neval_hess)
+  Hx = hess(nlp, x, y, obj_weight=obj_weight)
+  k = 1
+  for j = 1 : nlp.meta.nvar
+    for i = j : nlp.meta.nvar
+      vals[k] = Hx[i, j]
+      k += 1
+    end
+  end
+  return vals
+end
+
+function hprod!(nlp :: NLMPCC, x :: AbstractVector, v :: AbstractVector, Hv :: AbstractVector; obj_weight :: Real = one(eltype(x)))
+  increment!(nlp, :neval_hprod)
+  Hx = hess(nlp, x, obj_weight=obj_weight)
+  Hv = (Hx + Hx' - diagm(0 => diag(Hx))) * v
+  return Hv
+end
+
+function hprod!(nlp :: NLMPCC, x :: AbstractVector, y :: AbstractVector, v :: AbstractVector, Hv :: AbstractVector; obj_weight :: Real = one(eltype(x)))
+  increment!(nlp, :neval_hprod)
+  Hx = hess(nlp, x, y, obj_weight=obj_weight)
+  Hv = (Hx + Hx' - diagm(0 => diag(Hx))) * v
   return Hv
 end
 
@@ -164,8 +170,7 @@ G(x).*H(x) <= 0.
 """
 function viol(nlp :: NLMPCC, x :: AbstractVector)
 
- mod = nlp.mod
- n  = mod.meta.nvar
+ mod, n, ncc = nlp.mod, nlp.mod.meta.nvar, nlp.mod.meta.ncc
  x = length(x) == n ? x : x[1:n]
 
  feas_x = vcat(max.(mod.meta.lvar-x, 0), max.(x-mod.meta.uvar, 0))
