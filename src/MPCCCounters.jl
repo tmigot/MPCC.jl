@@ -2,6 +2,7 @@
 # MPCCMCounters type ; based on NLPModels Counters:
 # https://github.com/JuliaSmoothOptimizers/NLPModels.jl/blob/master/src/nlp_types.jl
 #
+# Problem both NLPModels and MPCC export neval_hess,...
 #####################################################################################
 
 mutable struct MPCCCounters

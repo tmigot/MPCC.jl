@@ -92,3 +92,21 @@ reinit!(stop_s)
 stop_s.optimality_check = WStat
 stop!(stop_s)
 @test status(stop_s) == :Optimal
+
+a = MPCC.neval_obj(stop_s.pb)
+decrement!(stop_s.pb, :neval_obj)
+@test MPCC.neval_obj(stop_s.pb) == a-1
+reset!(stop_s.pb)
+@test neval_consG(stop_s.pb) == 0
+
+testM = ex3()
+stop_m = MPCCStopping(testM, MStat, MPCCAtX(zeros(3), zeros(2)))
+stop_c = MPCCStopping(testM, CStat, MPCCAtX(zeros(3), zeros(2)))
+fill_in!(stop_m, zeros(3))
+#the sign computed by fill_in are not M-stat. optimized
+update_and_stop!(stop_m, lambda = [0.75, 0.25], lambdaG = [-2.0], lambdaH = [0.0])
+@test status(stop_m) == :Optimal
+
+fill_in!(stop_c, ones(3))
+stop!(stop_c)
+@test status(stop_c) == :Unknown

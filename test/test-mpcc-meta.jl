@@ -19,3 +19,24 @@ test_meta = MPCCModelMeta(n)
 @test test_meta.minimize == true        # true if optimize == minimize
 @test test_meta.nlo  == 1             # number of nonlinear objectives
 @test test_meta.islp == false             # true if the problem is a linear program
+
+try
+    MPCCModelMeta(0)
+    @test false
+catch
+    @test true
+end
+
+try
+    show(test_meta)
+    print(test_meta)
+    @test true
+catch
+    @test false
+end
+
+@test MPCC.bound_constrained(test_meta)           == false
+@test MPCC.unconstrained(test_meta)               == true
+@test MPCC.linearly_constrained(test_meta)        == false
+@test MPCC.equality_constrained(test_meta)        == false
+@test complementarity_constrained(test_meta) == false

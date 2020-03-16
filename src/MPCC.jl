@@ -42,7 +42,7 @@ export AbstractMPCCModelMeta, MPCCModelMeta, print,
 #####################################################################################
 include("MPCCCounters.jl")
 
-export MPCCCounters, increment!, reset!, sum_counters
+export MPCCCounters, increment!, reset!, sum_counters, decrement!
 
 include("AbstractMPCC.jl")
 
@@ -79,6 +79,10 @@ export MPCCNLPs, jacl, jac_actif
 include("BPMPCC.jl")
 
 export BPMPCCModel
+
+include("MPCCAmpl.jl")
+
+export MPCCAmpl
 
 include("NLMPCC.jl")
 
