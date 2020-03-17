@@ -19,10 +19,11 @@ mutable struct NLMPCC <: AbstractNLPModel
  mod      :: AbstractMPCCModel
 
  function NLMPCC(mod     :: AbstractMPCCModel;
-                  x      :: Vector = mod.meta.x0)
+                  x      :: Vector = mod.meta.x0,
+				  name::String = "Generic",
+				  lin::AbstractVector{<: Integer}=Int[])
 
-  n, ncc = mod.meta.nvar, mod.meta.ncc
-  ncon = maximum([length(mod.meta.lcon); length(mod.meta.ucon); length(mod.meta.y0)])
+  nvar, ncc = mod.meta.nvar, mod.meta.ncc
   new_lcon = vcat(mod.meta.lcon,
                   mod.meta.lccG,
                   mod.meta.lccH,
@@ -30,10 +31,18 @@ mutable struct NLMPCC <: AbstractNLPModel
   new_ucon = vcat(mod.meta.ucon,
                   Inf*ones(2*ncc),
                   zeros(ncc))
+  ncon = maximum([length(new_lcon); length(new_ucon)])
+  y0 = vcat(mod.meta.y0, zeros(3*ncc))
 
-  meta = NLPModelMeta(n, x0 = x, lvar = mod.meta.lvar, uvar = mod.meta.uvar,
-                                 ncon = mod.meta.ncon+3*ncc,
-                                 lcon = new_lcon, ucon = new_ucon)
+  nnzh = nvar * (nvar + 1) / 2
+  nnzj = nvar * ncon
+  nln = setdiff(1:ncon, lin)
+
+  meta = NLPModelMeta(nvar, x0 = x, lvar = mod.meta.lvar, uvar = mod.meta.uvar,
+                                    ncon = mod.meta.ncon+3*ncc, y0=y0,
+                                    lcon = new_lcon, ucon = new_ucon,
+								    nnzj=nnzj, nnzh=nnzh, lin=lin, nln=nln,
+								    minimize=true, islp=false, name=name)
 
   return new(meta, Counters(), x, mod)
  end
@@ -52,7 +61,7 @@ end
 function cons!(nlp :: NLMPCC, x :: AbstractVector, c :: AbstractVector)
   increment!(nlp, :neval_cons)
   Gx, Hx = consG(nlp.mod, x), consH(nlp.mod, x)
-  c[1:nlp.meta.ncon] = vcat(cons_nl(nlp.mod, x), Gx, Hx, Gx .* Hx)
+  c[1:nlp.meta.ncon] .= vcat(cons_nl(nlp.mod, x), Gx, Hx, Gx .* Hx)
   return c
 end
 
@@ -82,13 +91,13 @@ end
 
 function jprod!(nlp :: NLMPCC, x :: AbstractVector, v :: AbstractVector, Jv :: AbstractVector)
   increment!(nlp, :neval_jprod)
-  Jv = jac(nlp, x) * v
+  Jv .= jac(nlp, x) * v
   return Jv
 end
 
 function jtprod!(nlp :: NLMPCC, x :: AbstractVector, v :: AbstractVector, Jtv :: AbstractVector)
   increment!(nlp, :neval_jtprod)
-  Jtv = jac(nlp,x)' * v
+  Jtv .= jac(nlp,x)' * v
   return Jtv
 end
 
@@ -115,8 +124,8 @@ end
 function hess_structure!(nlp :: NLMPCC, rows :: AbstractVector{<: Integer}, cols :: AbstractVector{<: Integer})
   n = nlp.meta.nvar
   I = ((i,j) for i = 1:n, j = 1:n if i ≥ j)
-  rows[1 : nlp.meta.nnzh] .= getindex.(I, 1)
-  cols[1 : nlp.meta.nnzh] .= getindex.(I, 2)
+  rows .= getindex.(I, 1)
+  cols .= getindex.(I, 2)
   return rows, cols
 end
 
@@ -149,14 +158,14 @@ end
 function hprod!(nlp :: NLMPCC, x :: AbstractVector, v :: AbstractVector, Hv :: AbstractVector; obj_weight :: Real = one(eltype(x)))
   increment!(nlp, :neval_hprod)
   Hx = hess(nlp, x, obj_weight=obj_weight)
-  Hv = (Hx + Hx' - diagm(0 => diag(Hx))) * v
+  Hv .= (Hx + Hx' - diagm(0 => diag(Hx))) * v
   return Hv
 end
 
 function hprod!(nlp :: NLMPCC, x :: AbstractVector, y :: AbstractVector, v :: AbstractVector, Hv :: AbstractVector; obj_weight :: Real = one(eltype(x)))
   increment!(nlp, :neval_hprod)
   Hx = hess(nlp, x, y, obj_weight=obj_weight)
-  Hv = (Hx + Hx' - diagm(0 => diag(Hx))) * v
+  Hv .= (Hx + Hx' - diagm(0 => diag(Hx))) * v
   return Hv
 end
 

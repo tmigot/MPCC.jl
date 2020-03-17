@@ -113,8 +113,7 @@ Evaluate ∇f(x), the gradient of the objective function at x in place.
 """
 function grad!(mod :: MPCCNLPs, x :: Vector, gx :: AbstractVector)
  increment!(mod, :neval_grad)
- gx = grad(mod.mp, x)
- return gx
+ return grad!(mod.mp, x, gx)#gx
 end
 
 """
@@ -122,8 +121,7 @@ Evaluate ``c(x)``, the constraints at `x`.
 """
 function cons_nl!(mod :: MPCCNLPs, x :: Vector, c :: AbstractVector)
  increment!(mod, :neval_cons)
- c = cons(mod.mp, x)
- return c
+ return cons!(mod.mp, x, c)
 end
 
 """
@@ -132,9 +130,9 @@ Evaluate ``G(x)``, the constraints at `x`.
 function consG!(mod :: MPCCNLPs, x :: Vector, c :: AbstractVector)
  increment!(mod, :neval_consG)
  if mod.meta.ncc > 0
-  c = cons(mod.G, x)
+  c .= cons(mod.G, x)
  else
-  c = Float64[]
+  c .= Float64[]
  end
 
  return c
@@ -146,9 +144,9 @@ Evaluate ``H(x)``, the constraints at `x`.
 function consH!(mod :: MPCCNLPs, x :: Vector, c :: AbstractVector)
  increment!(mod, :neval_consH)
  if mod.meta.ncc > 0
-  c = cons(mod.H, x)
+  c .= cons(mod.H, x)
  else
-  c = Float64[]
+  c .= Float64[]
  end
 
  return c
@@ -342,9 +340,9 @@ Evaluate ``∇G(x)^Tv``, the transposed-Jacobian-vector product at `x`
 function jGtprod!(mod :: MPCCNLPs, x :: Vector, v :: Vector, Jv :: Vector)
  increment!(mod, :neval_jGtprod)
  if mod.meta.ncc > 0
-  Jv = jtprod(mod.G,x,v)
+  Jv .= jtprod(mod.G,x,v)
  else
-  Jv = Float64[]
+  Jv .= Float64[]
  end
 
  return Jv
@@ -357,9 +355,9 @@ Evaluate ``∇H(x)^Tv``, the transposed-Jacobian-vector product at `x`
 function jHtprod!(mod :: MPCCNLPs, x :: Vector, v :: Vector, Jv :: Vector)
  increment!(mod, :neval_jHtprod)
  if mod.meta.ncc > 0
-  Jv = jtprod(mod.H,x,v)
+  Jv .= jtprod(mod.H,x,v)
  else
-  Jv = Float64[]
+  Jv .= Float64[]
  end
 
  return Jv
@@ -457,13 +455,13 @@ end
 function hprod!(mod :: MPCCNLPs, x :: AbstractVector, v :: AbstractVector, Hv :: AbstractVector; obj_weight :: Real = one(eltype(x)))
   increment!(nlp, :neval_hprod)
   Hx = hess(mod, x, obj_weight = obj_weight)
-  Hv = (Hx + Hx' - diagm(0 => diag(Hx))) * v
+  Hv .= (Hx + Hx' - diagm(0 => diag(Hx))) * v
   return Hv
 end
 
 function hprod!(mod :: MPCCNLPs, x :: AbstractVector, y :: AbstractVector, v :: AbstractVector, Hv :: AbstractVector; obj_weight :: Real = one(eltype(x)))
   increment!(nlp, :neval_hprod)
   Hx = hess(mod, x, y, obj_weight = obj_weight)
-  Hv = (Hx + Hx' - diagm(0 => diag(Hx))) * v
+  Hv .= (Hx + Hx' - diagm(0 => diag(Hx))) * v
   return Hv
 end

@@ -162,7 +162,7 @@ end
 function cons_nl!(nlp :: BPMPCCModel, x :: AbstractVector, c :: AbstractVector)
   increment!(nlp, :neval_cons)
   Jl = JLag(nlp, nlp.f1, nlp.g, x)
-  c[1:nlp.meta.ncon]  = vcat(nlp.c(x), Jl)
+  c[1:nlp.meta.ncon] .= vcat(nlp.c(x), Jl)
   return c
 end
 
@@ -170,16 +170,16 @@ function consG!(nlp :: BPMPCCModel, x :: AbstractVector, c :: AbstractVector)
   increment!(nlp, :neval_consG)
   gxy = nlp.g(x)
   y   = x[nlp.n+1:nlp.n+nlp.m]
-  c[1:nlp.meta.ncc] = vcat( gxy - nlp.ll_lcon,
-                           -gxy + nlp.ll_ucon,
-                            y - nlp.ll_lvar,
-                           -y + nlp.ll_uvar)
+  c[1:nlp.meta.ncc] .= vcat( gxy - nlp.ll_lcon,
+                            -gxy + nlp.ll_ucon,
+                             y - nlp.ll_lvar,
+                            -y + nlp.ll_uvar)
   return c
 end
 
 function consH!(nlp :: BPMPCCModel, x :: AbstractVector, c :: AbstractVector)
   increment!(nlp, :neval_consH)
-  c[1:nlp.meta.ncc] = x[nlp.n+nlp.m+1:nlp.meta.nvar]
+  c[1:nlp.meta.ncc] .= x[nlp.n+nlp.m+1:nlp.meta.nvar]
   return c
 end
 
@@ -217,7 +217,7 @@ function jnlprod!(nlp :: BPMPCCModel,
                   Jv  :: AbstractVector)
   increment!(nlp, :neval_jprod)
   #Jv[1:nlp.meta.ncon] = ForwardDiff.derivative(t -> nlp.c(x + t * v), 0)
-  Jv = jac_nl(nlp, x) * v
+  Jv .= jac_nl(nlp, x) * v
   return Jv
 end
 
@@ -227,7 +227,7 @@ function jnltprod!(nlp :: BPMPCCModel,
                    Jtv :: AbstractVector)
   increment!(nlp, :neval_jtprod)
   #Jtv[1:nlp.meta.nvar] = ForwardDiff.gradient(x -> dot(nlp.c(x), v), x)
-  Jtv = jac_nl(nlp, x)' * v
+  Jtv .= jac_nl(nlp, x)' * v
   return Jtv
 end
 
@@ -261,7 +261,7 @@ function jGprod!(nlp :: BPMPCCModel,
                  Jv  :: AbstractVector)
   increment!(nlp, :neval_jGprod)
   #Jv[1:nlp.meta.ncc] = ForwardDiff.derivative(t -> nlp.G(x + t * v), 0)
-  Jv[1:nlp.meta.ncc] = jacG(nlp, x) * v
+  Jv[1:nlp.meta.ncc] .= jacG(nlp, x) * v
   return Jv
 end
 
@@ -271,7 +271,7 @@ function jGtprod!(nlp :: BPMPCCModel,
                   Jtv :: AbstractVector)
   increment!(nlp, :neval_jGtprod)
   #Jtv[1:nlp.meta.nvar] = ForwardDiff.gradient(x -> dot(nlp.G(x), v), x)
-  Jtv[1:nlp.meta.nvar] = jacG(nlp, x)' * v
+  Jtv[1:nlp.meta.nvar] .= jacG(nlp, x)' * v
   return Jtv
 end
 
@@ -302,7 +302,7 @@ function jHprod!(nlp :: BPMPCCModel,
                  Jv  :: AbstractVector)
   increment!(nlp, :neval_jHprod)
   #Jv[1:nlp.meta.ncc] = ForwardDiff.derivative(t -> nlp.G(x + t * v), 0)
-  Jv[1:nlp.meta.ncc] = jacH(nlp, x) * v
+  Jv[1:nlp.meta.ncc] .= jacH(nlp, x) * v
   return Jv
 end
 
@@ -312,7 +312,7 @@ function jHtprod!(nlp :: BPMPCCModel,
                   Jtv :: AbstractVector)
   increment!(nlp, :neval_jHtprod)
   #Jtv[1:nlp.meta.nvar] = ForwardDiff.gradient(x -> dot(nlp.G(x), v), x)
-  Jtv[1:nlp.meta.nvar] = jacH(nlp, x)' * v
+  Jtv[1:nlp.meta.nvar] .= jacH(nlp, x)' * v
   return Jtv
 end
 
@@ -480,6 +480,6 @@ function hHprod!(nlp :: BPMPCCModel,
                  v   :: AbstractVector,
                  Hv  :: AbstractVector)
   increment!(nlp, :neval_hHprod)
-  Hv = zeros(nlp.meta.nvar)
+  Hv .= zeros(nlp.meta.nvar)
   return Hv
 end
