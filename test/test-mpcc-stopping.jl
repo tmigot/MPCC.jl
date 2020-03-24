@@ -31,8 +31,8 @@ reinit!(stop_nlp, rstate = true, x = ones(5))
 test_max_cntrs = _init_max_counters(obj = 2)
 stop_nlp_cntrs = MPCCStopping(mpcc, max_cntrs = test_max_cntrs)
 @test stop_nlp_cntrs.max_cntrs[:neval_obj] == 2
-@test stop_nlp_cntrs.max_cntrs[:neval_grad] == 20000
-@test stop_nlp_cntrs.max_cntrs[:neval_sum] == 20000*11
+@test stop_nlp_cntrs.max_cntrs[:neval_grad] == 40000
+@test stop_nlp_cntrs.max_cntrs[:neval_sum] == 40000*11
 
 x0 = ones(6)
 c(x) = [sum(x)]
@@ -110,3 +110,12 @@ update_and_stop!(stop_m, lambda = [0.75, 0.25], lambdaG = [-2.0], lambdaH = [0.0
 fill_in!(stop_c, ones(3))
 stop!(stop_c)
 @test status(stop_c) == :Unknown
+
+#Unconstrained MPCC:
+test_unc = MPCCNLPs(ADNLPModel(rosenbrock, zeros(6)))
+stop_unc = MPCCStopping(test_unc, MStat, MPCCAtX(zeros(6), zeros(0)))
+fill_in!(stop_unc, ones(6))
+@test stop_unc.current_state.lambda == zeros(0)
+@test stop_unc.current_state.lambdaG == nothing
+@test stop_unc.current_state.lambdaH == nothing
+@test stop_unc.current_state.mu == nothing

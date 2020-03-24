@@ -49,23 +49,29 @@ end
 function _sign_multipliers_comp_Sstat(pb    :: AbstractMPCCModel,
                                       state :: MPCCAtX,
                                       actif :: Float64)
+
  I = findall(x -> x<=actif, 0.5*(state.cGx + state.cHx))
  pos = max.(max.(- state.lambdaG[I], 0.0), max.(- state.lambdaH[I], 0.0))
+
  return pos
 end
 
 function _sign_multipliers_comp_Mstat(pb    :: AbstractMPCCModel,
                                       state :: MPCCAtX)
+
  eq  = max.(abs.(state.lambdaG .* state.cGx), abs.(state.lambdaH .* state.cHx))
  pos = max.(- state.lambdaG .* state.lambdaH, 0.0)
  mpo = max.(- max.(state.lambdaG, state.lambdaH), 0.0)
+
  return max.(eq, pos, mpo)
 end
 
 function _sign_multipliers_comp_Cstat(pb    :: AbstractMPCCModel,
                                       state :: MPCCAtX)
+
  eq  = max.(abs.(state.lambdaG .* state.cGx), abs.(state.lambdaH .* state.cHx))
- pos = max.(- state.lambdaG .*state.lambdaH, 0.0)
+ pos = max.(- state.lambdaG .* state.lambdaH, 0.0)
+
  return max.(eq, pos)
 end
 
@@ -91,10 +97,13 @@ function _feasibility(pb    :: AbstractMPCCModel,
 end
 
 """
+W-stationary check:
 WStat: verifies the Weak-stationary conditions
 required: state.gx
 + if bounds: state.mu
 + if constraints: state.cx, state.Jx, state.lambda
++ if complementarity: state.cGx, state.JGx, state.lambdaG
+                      state.cHx, state.JHx, state.lambdaH
 """
 function WStat(pb    :: AbstractMPCCModel,
                state :: MPCCAtX;
@@ -117,6 +126,19 @@ function WStat(pb    :: AbstractMPCCModel,
     return norm(res, pnorm)
 end
 
+"""
+S-stationary check:
+Compute the score corresponding to:
+a) W-stationarity
+b) the correct sign of multipliers for indices
+I_00 = { i : 0.5(G_i(x^*)+H_i(x^*)) <= actif }
+
+required: state.gx
++ if bounds: state.mu
++ if constraints: state.cx, state.Jx, state.lambda
++ if complementarity: state.cGx, state.JGx, state.lambdaG
+                      state.cHx, state.JHx, state.lambdaH
+"""
 function SStat(pb    :: AbstractMPCCModel,
                state :: MPCCAtX;
                pnorm :: Float64 = Inf,
@@ -129,6 +151,23 @@ function SStat(pb    :: AbstractMPCCModel,
     return max(res, sign)
 end
 
+"""
+M-stationary check:
+Compute the score corresponding to:
+a) W-stationarity
+b) the correct sign of multipliers for indices I_00 by checking:
+         lambdaG .* lambdaH => 0
+(i.e. max.(- state.lambdaG .* state.lambdaH, 0.0))
+and
+         max(lambdaG, lambdaH) => 0
+(i.e. max.(- max.(state.lambdaG, state.lambdaH), 0.0))
+
+required: state.gx
++ if bounds: state.mu
++ if constraints: state.cx, state.Jx, state.lambda
++ if complementarity: state.cGx, state.JGx, state.lambdaG
+                      state.cHx, state.JHx, state.lambdaH
+"""
 function MStat(pb    :: AbstractMPCCModel,
                state :: MPCCAtX;
                pnorm :: Float64 = Inf,
@@ -140,6 +179,20 @@ function MStat(pb    :: AbstractMPCCModel,
     return max(res, sign)
 end
 
+"""
+C-stationary check:
+Compute the score corresponding to:
+a) W-stationarity
+b) the correct sign of multipliers for indices I_00 by checking:
+         lambdaG .* lambdaH => 0
+(i.e. max.(- state.lambdaG .* state.lambdaH, 0.0))
+
+required: state.gx
++ if bounds: state.mu
++ if constraints: state.cx, state.Jx, state.lambda
++ if complementarity: state.cGx, state.JGx, state.lambdaG
+                      state.cHx, state.JHx, state.lambdaH
+"""
 function CStat(pb    :: AbstractMPCCModel,
                state :: MPCCAtX;
                pnorm :: Float64 = Inf,

@@ -52,15 +52,15 @@ end
     lccG <= G(x),
     lccH <= H(x)
 """
-function cons!(mod :: AbstractMPCCModel, x :: AbstractVector, c :: AbstractVector)
-  if mod.meta.ncc > 0
-   G, H = consG(mod, x), consH(mod, x)
+function cons!(nlp :: AbstractMPCCModel, x :: AbstractVector, c :: AbstractVector)
+  if nlp.meta.ncc > 0
+   G, H = consG(nlp, x), consH(nlp, x)
   else
    G, H = Float64[], Float64[]
   end
 
-  if mod.meta.ncon > 0
-   vnl = cons_nl(mod, x)
+  if nlp.meta.ncon > 0
+   vnl = cons_nl(nlp, x)
   else
    vnl = Float64[]
   end
@@ -110,9 +110,9 @@ end
 """
 Evaluate ``c(x)``, the constraints at `x`.
 """
-function cons_nl(mod :: AbstractMPCCModel, x :: AbstractVector)
- c = similar(x, mod.meta.ncon)
- return cons_nl!(mod, x, c)
+function cons_nl(nlp :: AbstractMPCCModel, x :: AbstractVector)
+ c = similar(x, nlp.meta.ncon)
+ return cons_nl!(nlp, x, c)
 end
 
 cons_nl!(::AbstractMPCCModel, ::AbstractVector, ::AbstractVector) =
@@ -121,9 +121,9 @@ cons_nl!(::AbstractMPCCModel, ::AbstractVector, ::AbstractVector) =
 """
 Evaluate ``G(x)``, the constraints at `x`.
 """
-function consG(mod :: AbstractMPCCModel, x :: AbstractVector)
- c = similar(x, mod.meta.ncc)
- return consG!(mod, x, c)
+function consG(nlp :: AbstractMPCCModel, x :: AbstractVector)
+ c = similar(x, nlp.meta.ncc)
+ return consG!(nlp, x, c)
 end
 
 consG!(::AbstractMPCCModel, ::AbstractVector, ::AbstractVector) =
@@ -132,9 +132,9 @@ consG!(::AbstractMPCCModel, ::AbstractVector, ::AbstractVector) =
 """
 Evaluate ``G(x)``, the constraints at `x`.
 """
-function consH(mod :: AbstractMPCCModel, x :: AbstractVector)
- c = similar(x, mod.meta.ncc)
- return consH!(mod, x, c)
+function consH(nlp :: AbstractMPCCModel, x :: AbstractVector)
+ c = similar(x, nlp.meta.ncc)
+ return consH!(nlp, x, c)
 end
 
 consH!(::AbstractMPCCModel, ::AbstractVector, ::AbstractVector) =
@@ -414,13 +414,13 @@ end
 Evaluate ``[∇c(x), -∇G(x), -∇H(x)]v``, the Jacobian-vector product at `x` in place.
 """
 function jprod!(nlp::AbstractMPCCModel, x::AbstractVector, v::AbstractVector, Jv::AbstractVector)
-  ncon, ncc = mod.meta.ncon, mod.meta.ncc
+  ncon, ncc = nlp.meta.ncon, nlp.meta.ncc
   if ncon > 0
-      jnlprod!(nlp, x, v, Jv[1:ncon])
+      Jv[1:ncon] = jnlprod(nlp, x, v)
   end
   if ncc > 0
-      jGprod!(nlp, x, v, Jv[ncon+1:ncon+ncc])
-      jHprod!(nlp, x, v, Jv[ncon+ncc:ncon+2*ncc])
+      Jv[ncon+1:ncon+ncc]       = - jGprod(nlp, x, v)
+      Jv[ncon+ncc+1:ncon+2*ncc] = - jHprod(nlp, x, v)
   end
   return Jv
 end
@@ -484,14 +484,14 @@ end
 Evaluate ``[∇c(x), -∇G(x), -∇H(x)]^Tv``, the transposed-Jacobian-vector product at `x` in place.
 """
 function jtprod!(nlp::AbstractMPCCModel, x::AbstractVector, v::AbstractVector, Jv::AbstractVector)
-  ncon, ncc = mod.meta.ncon, mod.meta.ncc
-  Jv = zeros(ncon + 2*ncc)
+  ncon, ncc = nlp.meta.ncon, nlp.meta.ncc
+  Jv = zeros(nlp.meta.nvar)
   if ncon > 0
      Jv += jnltprod(nlp, x, v[1:ncon])
   end
   if ncc > 0
-      Jv += jGtprod(nlp, x, v[ncon+1:ncon+ncc], Jv)
-      Jv += jHtprod(nlp, x, v[ncon+ncc:ncon+2*ncc], Jv)
+      Jv += - jGtprod(nlp, x, v[ncon+1:ncon+ncc])
+      Jv += - jHtprod(nlp, x, v[ncon+ncc+1:ncon+2*ncc])
   end
   return Jv
 end

@@ -47,8 +47,9 @@ function _compute_mutliplier(pb    :: AbstractMPCCModel,
                              JGx   :: AbstractMatrix,
                              Hx    :: AbstractVector,
                              JHx   :: AbstractMatrix;
-                             active_prec_c :: Float64 = 1e-6,
-                			 active_prec_b :: Float64 = 1e-6)
+                             active_prec_c  :: Float64 = 1e-6,
+                             active_prec_cc :: Float64 = 1e-3,
+                			 active_prec_b  :: Float64 = 1e-6)
 
  n, ncc  = length(x), pb.meta.ncc
  nc = cx == nothing ? 0 : length(cx)
@@ -71,8 +72,8 @@ function _compute_mutliplier(pb    :: AbstractMPCCModel,
 
  if ncc != 0
   #active constraints
-  IG = findall(x->(norm(x) <= active_prec_c),abs.(Gx))
-  IH = findall(x->(norm(x) <= active_prec_c),abs.(Hx))
+  IG = findall(x->(norm(x) <= active_prec_cc),abs.(Gx))
+  IH = findall(x->(norm(x) <= active_prec_cc),abs.(Hx))
   Jc = (length(Ic)+length(Ib)) != 0 ? hcat(Jc,-JGx'[:,IG],-JHx'[:,IH]) : hcat(-JGx'[:,IG],-JHx'[:,IH])
  else
   IG, IH = [], []

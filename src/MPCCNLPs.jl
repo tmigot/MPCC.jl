@@ -14,7 +14,7 @@ Definit le type MPCC :
 min f(x)
 l <= x <= u
 lb <= c(x) <= ub
-0 <= G(x) _|_ H(x) >= 0
+lccG <= G(x) _|_ H(x) >= lccH
 """
 mutable struct MPCCNLPs <: AbstractMPCCModel
 
@@ -48,51 +48,6 @@ mutable struct MPCCNLPs <: AbstractMPCCModel
 
   return new(mp, G, H, meta, MPCCCounters())
  end
-end
-
-############################################################################
-
-#Constructeurs supplémentaires :
-
-############################################################################
-"""
-Additional constructor of the MPCCNLPs:
-G and H as AbstractNLPModel
-Build a classical NLPModels using ADNLPModel
-"""
-function MPCCNLPs(f    :: Function,
-                  x0   :: Vector,
-                  G    :: AbstractNLPModel,
-                  H    :: AbstractNLPModel,
-                  lvar :: Vector,
-                  uvar :: Vector,
-                  c    :: Function,
-                  lcon :: Vector,
-                  ucon :: Vector)
-
- mp = ADNLPModel(f, x0, lvar = lvar, uvar = uvar, c = c, lcon = lcon, ucon = ucon)
-
- return MPCCNLPs(mp, G=G, H=H)
-end
-
-"""
-Additional constructor of the MPCCNLPs:
-Build a classical NLPModels, G and H using ADNLPModel
-"""
-function MPCCNLPs(f    :: Function,
-                  x0   :: Vector,
-                  G    :: Function,
-                  H    :: Function,
-                  lvar :: Vector,
-                  uvar :: Vector,
-                  c    :: Function,
-                  lcon :: Vector,
-                  ucon :: Vector)
-
- nlpG = ADNLPModel(x -> 0, zeros(2), c = x -> G(x))
- nlpH = ADNLPModel(x -> 0, zeros(2), c = x -> H(x))
-
- return MPCCNLPs(f, x0, nlpG, nlpH, lvar, uvar, c, lcon, ucon)
 end
 
 ############################################################################
@@ -150,20 +105,6 @@ function consH!(mod :: MPCCNLPs, x :: Vector, c :: AbstractVector)
  end
 
  return c
-end
-
-"""
-Evaluate ``[x, c(x)]``, the constraints at `x`.
-"""
-function cons_mp(mod :: MPCCNLPs, x :: AbstractVector)
-
- if mod.meta.ncon > 0
-  vnl = cons_nl(mod, x)
- else
-  vnl = Float64[]
- end
-
- return vcat(x, vnl)
 end
 
 """
@@ -301,7 +242,7 @@ end
 Evaluate ``∇c(x)v``, the transposed-Jacobian-vector product at `x`.
 """
 function jnlprod!(mod :: MPCCNLPs, x :: Vector, v :: Vector, Jv :: Vector)
- return jnlprod!(mod.mp,x,v,Jv)
+ return jprod!(mod.mp, x, v, Jv)
 end
 
 """
@@ -310,7 +251,11 @@ Evaluate ``∇G(x)v``, the Jacobian-vector product at `x` in place.
 """
 function jGprod!(mod :: MPCCNLPs, x :: AbstractVector, v :: AbstractVector, Jv :: AbstractVector)
     increment!(mod, :neval_jGprod)
-    throw(NotImplementedError("jGprod!"))
+    if mod.meta.ncc > 0
+     Jv .= jprod(mod.G, x, v)
+    else
+     Jv .= Float64[]
+    end
     return Jv
 end
 
@@ -320,7 +265,11 @@ Evaluate ``∇H(x)v``, the Jacobian-vector product at `x` in place.
 """
 function jHprod!(mod :: MPCCNLPs, x :: AbstractVector, v :: AbstractVector, Jv :: AbstractVector)
     increment!(mod, :neval_jHprod)
-    throw(NotImplementedError("jHprod!"))
+    if mod.meta.ncc > 0
+     Jv .= jprod(mod.H, x, v)
+    else
+     Jv .= Float64[]
+    end
     return Jv
 end
 
@@ -328,9 +277,9 @@ end
     Jtv = jtprod(nlp, x, v, Jtv)
 Evaluate ``∇c(x)^Tv``, the transposed-Jacobian-vector product at `x`.
 """
-function jnltprodnl!(mod :: MPCCNLPs, x :: Vector, v :: Vector, Jv :: Vector)
+function jnltprod!(mod :: MPCCNLPs, x :: Vector, v :: Vector, Jv :: Vector)
  increment!(mod, :neval_jtprod)
- return jtprod!(mod.mp,x,v, Jv)
+ return jtprod!(mod.mp, x, v, Jv)
 end
 
 """
@@ -340,7 +289,7 @@ Evaluate ``∇G(x)^Tv``, the transposed-Jacobian-vector product at `x`
 function jGtprod!(mod :: MPCCNLPs, x :: Vector, v :: Vector, Jv :: Vector)
  increment!(mod, :neval_jGtprod)
  if mod.meta.ncc > 0
-  Jv .= jtprod(mod.G,x,v)
+  Jv .= jtprod(mod.G, x, v)
  else
   Jv .= Float64[]
  end
@@ -355,7 +304,7 @@ Evaluate ``∇H(x)^Tv``, the transposed-Jacobian-vector product at `x`
 function jHtprod!(mod :: MPCCNLPs, x :: Vector, v :: Vector, Jv :: Vector)
  increment!(mod, :neval_jHtprod)
  if mod.meta.ncc > 0
-  Jv .= jtprod(mod.H,x,v)
+  Jv .= jtprod(mod.H, x, v)
  else
   Jv .= Float64[]
  end
@@ -370,38 +319,15 @@ end
 
 function hess(mod :: MPCCNLPs, x :: AbstractVector, y :: AbstractVector; obj_weight = 1.0)
  increment!(mod, :neval_hess)
- return hess(mod.mp, x, y, obj_weight = obj_weight)
-end
-
-function hessnl(mod :: MPCCNLPs, x :: Vector ; obj_weight = 1.0, y = zeros)
-    printstyled("Do we come here?", color = :red)
- return hess(mod.mp,x,y; obj_weight = obj_weight)
-end
-
-function hessG(mod :: MPCCNLPs, x :: Vector ; obj_weight = 1.0)
- increment!(mod, :neval_hessG)
- if mod.meta.ncc > 0
-  rslt = hess(mod.G, x, obj_weight = obj_weight)
- else
-  rslt = zeros(0,0)
- end
- return rslt
+ ncon, ncc = mod.meta.ncon, mod.meta.ncc
+ yG, yH = y[ncon+1:ncon+ncc], y[ncon+ncc+1:ncon+2*ncc]
+ return hess(mod.mp, x, y[1:ncon], obj_weight = obj_weight) - hessG(mod, x, yG) - hessH(mod, x, yH)
 end
 
 function hessG(mod :: MPCCNLPs, x :: AbstractVector, y :: AbstractVector; obj_weight = 1.0)
- increment!(mod, :neval_hess)
+ increment!(mod, :neval_hessG)
  if mod.meta.ncc > 0
   rslt = hess(mod.G, x, y, obj_weight = obj_weight)
- else
-  rslt = zeros(0,0)
- end
- return rslt
-end
-
-function hessH(mod :: MPCCNLPs, x :: Vector ; obj_weight = 1.0)
- increment!(mod, :neval_hessH)
- if mod.meta.ncc > 0
-  rslt = hess(mod.H, x, obj_weight = obj_weight)
  else
   rslt = zeros(0,0)
  end
@@ -428,7 +354,7 @@ end
 
 function hess_coord!(nlp :: MPCCNLPs, x :: AbstractVector, vals :: AbstractVector; obj_weight :: Real = one(eltype(x)))
   increment!(nlp, :neval_hess)
-  Hx = hess(mod, x, obj_weight=obj_weight)
+  Hx = hess(nlp, x, obj_weight=obj_weight)
   k = 1
   for j = 1 : nlp.meta.nvar
     for i = j : nlp.meta.nvar
@@ -441,7 +367,7 @@ end
 
 function hess_coord!(nlp :: MPCCNLPs, x :: AbstractVector, y :: AbstractVector, vals :: AbstractVector; obj_weight :: Real = one(eltype(x)))
   increment!(nlp, :neval_hess)
-  Hx = hess(mod, x, y, obj_weight=obj_weight)
+  Hx = hess(nlp, x, y, obj_weight=obj_weight)
   k = 1
   for j = 1 : nlp.meta.nvar
     for i = j : nlp.meta.nvar
@@ -452,16 +378,16 @@ function hess_coord!(nlp :: MPCCNLPs, x :: AbstractVector, y :: AbstractVector, 
   return vals
 end
 
-function hprod!(mod :: MPCCNLPs, x :: AbstractVector, v :: AbstractVector, Hv :: AbstractVector; obj_weight :: Real = one(eltype(x)))
+function hprod!(nlp :: MPCCNLPs, x :: AbstractVector, v :: AbstractVector, Hv :: AbstractVector; obj_weight :: Real = one(eltype(x)))
   increment!(nlp, :neval_hprod)
-  Hx = hess(mod, x, obj_weight = obj_weight)
+  Hx = hess(nlp, x, obj_weight = obj_weight)
   Hv .= (Hx + Hx' - diagm(0 => diag(Hx))) * v
   return Hv
 end
 
-function hprod!(mod :: MPCCNLPs, x :: AbstractVector, y :: AbstractVector, v :: AbstractVector, Hv :: AbstractVector; obj_weight :: Real = one(eltype(x)))
+function hprod!(nlp :: MPCCNLPs, x :: AbstractVector, y :: AbstractVector, v :: AbstractVector, Hv :: AbstractVector; obj_weight :: Real = one(eltype(x)))
   increment!(nlp, :neval_hprod)
-  Hx = hess(mod, x, y, obj_weight = obj_weight)
+  Hx = hess(nlp, x, y, obj_weight = obj_weight)
   Hv .= (Hx + Hx' - diagm(0 => diag(Hx))) * v
   return Hv
 end

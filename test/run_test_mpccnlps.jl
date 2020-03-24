@@ -6,14 +6,36 @@ JuMP.@NLobjective(test1bis,Min,x[1]-x[2])
 JuMP.@constraint(test1bis,1-x[2]>=0)
 test1bis = MathProgNLPModel(test1bis)
 
+#Test 0: constructor
 test1 = ex1()
 test1bis = MPCCNLPs(test1bis)
+#Creating two NLPs with a different number of constraints would lead to an error
+error_G = JuMP.Model()
+JuMP.@variable(error_G,x[1:2],start=1.0)
+JuMP.@constraint(error_G,x[1]>=0)
+JuMP.@NLobjective(error_G,Min,0.0)
+error_G = MathProgNLPModel(error_G)
+error_H=JuMP.Model()
+JuMP.@variable(error_H,x[1:2],start=1.0)
+JuMP.@NLobjective(error_H,Min,0.0)
+error_H=MathProgNLPModel(error_H)
+try
+    error_test = MPCCNLPs(ex1,G = error_G, H = error_H)
+    @test false
+catch
+    @test true
+end
+test1unc = MPCCNLPs(ADNLPModel(rosenbrock, zeros(6)))
+test1unbd = ex1bd()
 
 #Test 1: meta check
 @test test1.meta.ncc == 1
 @test test1bis.meta.ncc == 0
 @test test1.meta.nvar == 2
 @test test1bis.meta.nvar == 2
+@test test1unc.meta.ncon + test1unc.meta.ncc == 0
+@test test1unbd.meta.ncc == 1
+@test test1unbd.meta.ncon == 0
 
 #Test 2: data check
 #test1 has no bounds constraints, one >= constraint, and complementarity constraints
@@ -28,6 +50,26 @@ test1bis = MPCCNLPs(test1bis)
 @test obj(test1, test1.meta.x0) == 0.0
 @test grad(test1,test1.meta.x0) == grad(test1,[Inf,Inf])
 @test hess(test1,test1.meta.x0) == sparse(zeros(2,2))
+@test hess(test1, zeros(2), zeros(3)) == sparse(zeros(2,2))
+@test hprod(test1, zeros(2), zeros(3), ones(2)) == zeros(2)
+
+#Test 4: check cons, consG, consH
+@test cons(test1bis, zeros(2)) == [0.0]
+@test consG(test1bis, zeros(2)) == []
+@test consH(test1bis, zeros(2)) == []
+
+#Test 5: jacobian matrix
+@test jacG(test1bis, zeros(2)) == []
+@test jacH(test1bis, zeros(2)) == []
+@test size(jac(test1unc, zeros(6)),1) == 0
+@test size(jac_actif(test1unc, zeros(6), 1e-6)[1],1) == 0
+@test size(jac(test1, test1.meta.x0)) == (3,2)
+@test size(jac_actif(test1, zeros(2),1e-6)[1]) == (2,8)
+@test size(jac(test1unbd, test1unbd.meta.x0)) == (2,2)
+@test size(jac_actif(test1unbd, zeros(2), 1e-6)[1]) == (2,6)
+
+@test jprod(test1, zeros(2), ones(2))  == - ones(3)
+@test jtprod(test1, zeros(2), ones(3)) == [-1.0, -2.0]
 
 #Test 4: check les contraintes et la réalisabilité
 #test1 has two stationary points:

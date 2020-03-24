@@ -96,30 +96,30 @@ end
 _init_max_counters(): initialize the maximum number of evaluations on each of
                         the functions present in the MPCCCounters.
 """
-function _init_max_counters(; obj     :: Int64 = 20000,
-                              grad    :: Int64 = 20000,
-                              cons    :: Int64 = 20000,
-                              consG   :: Int64 = 20000,
-                              consH   :: Int64 = 20000,
-                              jcon    :: Int64 = 20000,
-                              jgrad   :: Int64 = 20000,
-                              jac     :: Int64 = 20000,
-                              jacG    :: Int64 = 20000,
-                              jacH    :: Int64 = 20000,
-                              jprod   :: Int64 = 20000,
-                              jGprod  :: Int64 = 20000,
-                              jHprod  :: Int64 = 20000,
-                              jtprod  :: Int64 = 20000,
-                              jGtprod :: Int64 = 20000,
-                              jHtprod :: Int64 = 20000,
-                              hess    :: Int64 = 20000,
-                              hessG   :: Int64 = 20000,
-                              hessH   :: Int64 = 20000,
-                              hprod   :: Int64 = 20000,
-                              hGprod  :: Int64 = 20000,
-                              hHprod  :: Int64 = 20000,
-                              jhprod  :: Int64 = 20000,
-                              sum     :: Int64 = 20000*11)
+function _init_max_counters(; obj     :: Int64 = 40000,
+                              grad    :: Int64 = 40000,
+                              cons    :: Int64 = 40000,
+                              consG   :: Int64 = 40000,
+                              consH   :: Int64 = 40000,
+                              jcon    :: Int64 = 40000,
+                              jgrad   :: Int64 = 40000,
+                              jac     :: Int64 = 40000,
+                              jacG    :: Int64 = 40000,
+                              jacH    :: Int64 = 40000,
+                              jprod   :: Int64 = 40000,
+                              jGprod  :: Int64 = 40000,
+                              jHprod  :: Int64 = 40000,
+                              jtprod  :: Int64 = 40000,
+                              jGtprod :: Int64 = 40000,
+                              jHtprod :: Int64 = 40000,
+                              hess    :: Int64 = 40000,
+                              hessG   :: Int64 = 40000,
+                              hessH   :: Int64 = 40000,
+                              hprod   :: Int64 = 40000,
+                              hGprod  :: Int64 = 40000,
+                              hHprod  :: Int64 = 40000,
+                              jhprod  :: Int64 = 40000,
+                              sum     :: Int64 = 40000*11)
 
   cntrs = Dict([(:neval_obj,       obj), (:neval_grad,   grad),
                 (:neval_cons,     cons), (:neval_jcon,   jcon),
@@ -139,6 +139,8 @@ end
 
 """
 fill_in!: a function that fill in the required values in the State
+
+kwargs are forwarded to _compute_mutliplier function
 """
 function fill_in!(stp     :: MPCCStopping,
                   x       :: Iterate;
@@ -155,7 +157,8 @@ function fill_in!(stp     :: MPCCStopping,
                   JGx     :: MatrixType = nothing,
                   cHx     :: Iterate    = nothing,
                   JHx     :: MatrixType = nothing,
-                  matrix_info :: Bool   = true)
+                  matrix_info :: Bool   = true,
+                  kwargs...)
 
  gfx = fx == nothing  ? obj(stp.pb, x)   : fx
  ggx = gx == nothing  ? grad(stp.pb, x)  : gx
@@ -185,10 +188,10 @@ function fill_in!(stp     :: MPCCStopping,
  #update the Lagrange multiplier if one of the 2 is asked
  #if (stp.pb.meta.ncc > 0 && stp.pb.meta.ncon > 0 && has_bounds(stp.pb)) && (lambdaG == nothing || lambdaH == nothing ||lambda == nothing || mu == nothing)
  if (stp.pb.meta.ncc > 0) && (lambdaG == nothing || lambdaH == nothing ||lambda == nothing || mu == nothing)
-  lb, lc, lG, lH = _compute_mutliplier(stp.pb, x, ggx, gcx, gJx, gcGx, gJGx, gcHx, gJHx)
+  lb, lc, lG, lH = _compute_mutliplier(stp.pb, x, ggx, gcx, gJx, gcGx, gJGx, gcHx, gJHx, kwargs...)
  #elseif (stp.pb.meta.ncon > 0 && has_bounds(stp.pb)) && (lambda == nothing || mu == nothing)
  elseif (stp.pb.meta.ncon > 0 || has_bounds(stp.pb)) && (lambda == nothing || mu == nothing)
-  lb, lc = _compute_mutliplier(stp.pb.mp, x, ggx, gcx, gJx)
+  lb, lc = _compute_mutliplier(stp.pb.mp, x, ggx, gcx, gJx, kwargs...)
   lG, lH = lambdaG, lambdaH
  elseif  stp.pb.meta.ncon == 0 && !has_bounds(stp.pb) && lambda == nothing
   lb, lc = mu, stp.current_state.lambda
@@ -273,7 +276,7 @@ MPCCStopping where the optimality_check function is an input.
 """
 function _optimality_check(stp  :: MPCCStopping; kwargs...)
 
- optimality = stp.optimality_check(stp.pb, stp.current_state, actif = stp.meta.atol; kwargs...)
+ optimality = stp.optimality_check(stp.pb, stp.current_state; kwargs...)
 
  return optimality
 end
