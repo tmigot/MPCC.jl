@@ -158,17 +158,16 @@ jth_sparse_congrad(::AbstractMPCCModel, ::AbstractVector, ::Integer) =
     f, c = objcons(nlp, x)
 Evaluate ``f(x)`` and ``c(x)`` at `x`.
 """
-function objcons(nlp, x)
-  f = obj(nlp, x)
-  c = nlp.meta.ncon > 0 ? cons(nlp, x) : eltype(x)[]
-  return f, c
+function objcons(nlp :: AbstractMPCCModel, x :: AbstractVector)
+  c = similar(x, nlp.meta.ncon)
+  return objcons!(nlp, x, c)
 end
 
 """
     f = objcons!(nlp, x, c)
 Evaluate ``f(x)`` and ``c(x)`` at `x`. `c` is overwritten with the value of ``c(x)``.
 """
-function objcons!(nlp, x, c)
+function objcons!(nlp :: AbstractMPCCModel, x :: AbstractVector, c :: AbstractVector)
   f = obj(nlp, x)
   nlp.meta.ncon > 0 && cons!(nlp, x, c)
   return f, c
@@ -178,10 +177,9 @@ end
     f, g = objgrad(nlp, x)
 Evaluate ``f(x)`` and ``∇f(x)`` at `x`.
 """
-function objgrad(nlp, x)
-  f = obj(nlp, x)
-  g = grad(nlp, x)
-  return f, g
+function objgrad(nlp :: AbstractMPCCModel, x :: AbstractVector)
+  g = similar(x)
+  return objgrad!(nlp, x, g)
 end
 
 """
@@ -189,7 +187,7 @@ end
 Evaluate ``f(x)`` and ``∇f(x)`` at `x`. `g` is overwritten with the
 value of ``∇f(x)``.
 """
-function objgrad!(nlp, x, g)
+function objgrad!(nlp :: AbstractMPCCModel, x :: AbstractVector, g :: AbstractVector)
   f = obj(nlp, x)
   grad!(nlp, x, g)
   return f, g

@@ -14,3 +14,8 @@ mpcca = MPCCAmpl(testa, [0], 0)
 @test mpcca.meta.lvar == [-100.;-100.]
 @test mpcca.meta.uvar == [ 100.; 100.]
 @test mpcca.meta.ncon == 1
+
+@test obj(mpcca.mp, mpcca.meta.x0)  == 0.0
+@test grad(mpcca.mp, mpcca.meta.x0) == [1.0, -1.0]
+@test cons(mpcca.mp, mpcca.meta.x0) == [-1.0]
+@test jac(mpcca.mp, mpcca.meta.x0)  == [0.0 -1.0]

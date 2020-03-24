@@ -110,13 +110,13 @@ function cons_nl!(nlp :: ADMPCCModel, x :: AbstractVector, c :: AbstractVector)
 end
 
 function consG!(nlp :: ADMPCCModel, x :: AbstractVector, c :: AbstractVector)
-  increment!(nlp, :neval_cons)
+  increment!(nlp, :neval_consG)
   c[1:nlp.meta.ncc] .= nlp.G(x)
   return c
 end
 
 function consH!(nlp :: ADMPCCModel, x :: AbstractVector, c :: AbstractVector)
-  increment!(nlp, :neval_cons)
+  increment!(nlp, :neval_consH)
   c[1:nlp.meta.ncc] .= nlp.H(x)
   return c
 end

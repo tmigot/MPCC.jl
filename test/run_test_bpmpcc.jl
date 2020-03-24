@@ -68,3 +68,5 @@ x0, y0, l1, l2, m1, m2 = Main.MPCC._var_bp(bpmpcc, t0)
 @test hess(bpmpcc, t0, obj_weight = 0.0) == zeros(12,12)
 @test hprod(bpmpcc, t0, zeros(7), zeros(12), obj_weight = 0.0) == zeros(12)
 @test hprod(bpmpcc, t0, zeros(12), obj_weight = 0.0) == zeros(12)
+
+@test hessH_structure(bpmpcc) == hessG_structure(bpmpcc)

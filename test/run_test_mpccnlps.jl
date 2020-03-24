@@ -20,7 +20,7 @@ JuMP.@variable(error_H,x[1:2],start=1.0)
 JuMP.@NLobjective(error_H,Min,0.0)
 error_H=MathProgNLPModel(error_H)
 try
-    error_test = MPCCNLPs(ex1,G = error_G, H = error_H)
+    error_test = MPCCNLPs(ADNLPModel(rosenbrock, zeros(6)), G = error_G, H = error_H)
     @test false
 catch
     @test true
@@ -49,14 +49,21 @@ test1unbd = ex1bd()
 #test1 has a linear objective function, so the gradient is constant and hessian vanishes
 @test obj(test1, test1.meta.x0) == 0.0
 @test grad(test1,test1.meta.x0) == grad(test1,[Inf,Inf])
+@test objgrad(test1unc, test1unc.meta.x0) == (3.0, [-2.0, 0.0, -2.0, 0.0, -2.0, 0.0])
 @test hess(test1,test1.meta.x0) == sparse(zeros(2,2))
 @test hess(test1, zeros(2), zeros(3)) == sparse(zeros(2,2))
+@test hess_structure(test1) == ([1, 2, 2], [1, 1, 2])
+@test length(hess_coord(test1, zeros(2))) == 3
+@test length(hess_coord(test1, zeros(2), zeros(3))) == 3
+@test hprod(test1, zeros(2), ones(2)) == zeros(2)
 @test hprod(test1, zeros(2), zeros(3), ones(2)) == zeros(2)
 
 #Test 4: check cons, consG, consH
 @test cons(test1bis, zeros(2)) == [0.0]
 @test consG(test1bis, zeros(2)) == []
 @test consH(test1bis, zeros(2)) == []
+@test cons(test1unc, test1unc.meta.x0) == []
+@test objcons(test1unc, test1unc.meta.x0) == (3.0, [])
 
 #Test 5: jacobian matrix
 @test jacG(test1bis, zeros(2)) == []
