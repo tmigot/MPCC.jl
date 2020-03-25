@@ -70,3 +70,5 @@ x0, y0, l1, l2, m1, m2 = Main.MPCC._var_bp(bpmpcc, t0)
 @test hprod(bpmpcc, t0, zeros(12), obj_weight = 0.0) == zeros(12)
 
 @test hessH_structure(bpmpcc) == hessG_structure(bpmpcc)
+@test length(hessH_coord(bpmpcc, bpmpcc.meta.x0, zeros(2))) == bpmpcc.meta.nvar * (bpmpcc.meta.nvar + 1) / 2
+@test length(hessG_coord(bpmpcc, bpmpcc.meta.x0, zeros(2))) == bpmpcc.meta.nvar * (bpmpcc.meta.nvar + 1) / 2

@@ -33,3 +33,5 @@ admpcc = ADMPCCModel(rosenbrock,  x0,
 @test hprod(admpcc, admpcc.meta.x0, zeros(5), ones(6), obj_weight = 0.0) == zeros(6)
 
 @test hessH_structure(admpcc) == hessG_structure(admpcc)
+@test length(hessH_coord(admpcc, admpcc.meta.x0, zeros(2))) == admpcc.meta.nvar * (admpcc.meta.nvar + 1) / 2
+@test length(hessG_coord(admpcc, admpcc.meta.x0, zeros(2))) == admpcc.meta.nvar * (admpcc.meta.nvar + 1) / 2

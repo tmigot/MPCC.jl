@@ -291,7 +291,7 @@ function jGtprod!(mod :: MPCCNLPs, x :: Vector, v :: Vector, Jv :: Vector)
  if mod.meta.ncc > 0
   Jv .= jtprod(mod.G, x, v)
  else
-  Jv .= Float64[]
+  Jv = Float64[]
  end
 
  return Jv
@@ -306,7 +306,7 @@ function jHtprod!(mod :: MPCCNLPs, x :: Vector, v :: Vector, Jv :: Vector)
  if mod.meta.ncc > 0
   Jv .= jtprod(mod.H, x, v)
  else
-  Jv .= Float64[]
+  Jv = Float64[]
  end
 
  return Jv

@@ -78,6 +78,14 @@ test1unbd = ex1bd()
 @test jprod(test1, zeros(2), ones(2))  == - ones(3)
 @test jtprod(test1, zeros(2), ones(3)) == [-1.0, -2.0]
 
+@test jacl(test1unc, test1unc.meta.x0)              == []
+@test jHtprod(test1unc, test1unc.meta.x0, zeros(0)) == []
+@test jGtprod(test1unc, test1unc.meta.x0, zeros(0)) == []
+@test jGprod(test1unc, test1unc.meta.x0, zeros(2))  == []
+@test jHprod(test1unc, test1unc.meta.x0, zeros(2))  == []
+@test hessG(test1unc, test1unc.meta.x0, zeros(0))   == zeros(0,0)
+@test hessH(test1unc, test1unc.meta.x0, zeros(0))   == zeros(0,0)
+
 #Test 4: check les contraintes et la réalisabilité
 #test1 has two stationary points:
 Wpoint, Spoint = zeros(2), [0.0, 1.0]

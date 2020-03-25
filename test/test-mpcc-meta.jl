@@ -38,5 +38,6 @@ end
 @test MPCC.bound_constrained(test_meta)           == false
 @test MPCC.unconstrained(test_meta)               == true
 @test MPCC.linearly_constrained(test_meta)        == false
+@test MPCC.inequality_constrained(test_meta)        == false
 @test MPCC.equality_constrained(test_meta)        == false
 @test complementarity_constrained(test_meta) == false

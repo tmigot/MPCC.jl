@@ -54,8 +54,8 @@ getcons(:: MPCCAmpl)
 return the set of indices of classical constraints and complementarity cons
 """
 function getcons(nlp :: MPCCAmpl)
-    Icc = findall(x -> x>0, cvar)
-    I   = findall(x -> x==0, cvar)
+    Icc = findall(x -> x>0, nlp.cvar)
+    I   = findall(x -> x==0, nlp.cvar)
     return I, Icc
 end
 
@@ -73,21 +73,33 @@ end
 function cons_nl!(nlp :: MPCCAmpl, x :: AbstractVector, c :: AbstractVector)
   increment!(nlp, :neval_cons)
   I, Icc = getcons(nlp)
-  c[1:nlp.meta.ncon] .= cons(nlp, x)[I]
+  if nlp.meta.ncon > 0
+   c[1:nlp.meta.ncon] .= cons(nlp, x)[I]
+  else
+    c = zeros(0)
+  end
   return c
 end
 
 function consG!(nlp :: MPCCAmpl, x :: AbstractVector, c :: AbstractVector)
   increment!(nlp, :neval_consG)
   I, Icc = getcons(nlp)
-  c[1:nlp.meta.ncc] .= cons(nlp, x)[Icc]
+  if nlp.meta.ncc > 0
+   c[1:nlp.meta.ncc] .= cons(nlp, x)[Icc]
+  else
+    c = zeros(0)
+  end
   return c
 end
 
 function consH!(nlp :: MPCCAmpl, x :: AbstractVector, c :: AbstractVector)
   increment!(nlp, :neval_consH)
   I, Icc = getcons(nlp)
-  c[1:nlp.meta.ncc] .= x[nlp.cvar[Icc]]
+  if nlp.meta.ncc > 0
+   c[1:nlp.meta.ncc] .= x[nlp.cvar[Icc]]
+  else
+    c = zeros(0)
+  end
   return c
 end
 
@@ -118,7 +130,11 @@ function jacG_coord!(nlp :: MPCCAmpl, x :: AbstractVector, vals :: AbstractVecto
   m, n = nlp.meta.ncc, nlp.meta.nvar
   increment!(nlp, :neval_jacG)
   I, Icc = getcons(nlp)
-  vals[1 : n*m] .= (jac(nlp.mp, x)[Icc,:])[:]
+  if nlp.meta.ncc > 0
+   vals[1 : n*m] .= (jac(nlp.mp, x)[Icc,:])[:]
+  else
+   vals = zeros(0)
+  end
   return vals
 end
 
@@ -139,4 +155,161 @@ function jacH_coord!(nlp :: MPCCAmpl, x :: AbstractVector, vals :: AbstractVecto
   #end
   vals[1 : m] .= ones(m)
   return vals
+end
+
+function jnlprod!(nlp :: MPCCAmpl, x :: AbstractVector, v :: AbstractVector, Jv :: AbstractVector)
+  increment!(nlp, :neval_jprod)
+  Jv[1:nlp.meta.ncon] .= jac_nl(nlp, x) * v
+  return Jv
+end
+
+function jnltprod!(nlp :: MPCCAmpl, x :: AbstractVector, v :: AbstractVector, Jtv :: AbstractVector)
+  increment!(nlp, :neval_jtprod)
+  Jtv[1:nlp.meta.nvar] .= jac_nl(nlp, x)' * v
+  return Jtv
+end
+
+function jGprod!(nlp :: MPCCAmpl, x :: AbstractVector, v :: AbstractVector, Jv :: AbstractVector)
+  increment!(nlp, :neval_jGprod)
+  Jv[1:nlp.meta.ncc] .= jacG(nlp, x) * v
+  return Jv
+end
+
+function jGtprod!(nlp :: MPCCAmpl, x :: AbstractVector, v :: AbstractVector, Jtv :: AbstractVector)
+  increment!(nlp, :neval_jGtprod)
+  Jtv[1:nlp.meta.nvar] .= jacG(nlp, x)' * v
+  return Jtv
+end
+
+function jHprod!(nlp :: MPCCAmpl, x :: AbstractVector, v :: AbstractVector, Jv :: AbstractVector)
+  increment!(nlp, :neval_jHprod)
+  Jv[1:nlp.meta.ncc] .= jacH(nlp, x) * v
+  return Jv
+end
+
+function jHtprod!(nlp :: MPCCAmpl, x :: AbstractVector, v :: AbstractVector, Jtv :: AbstractVector)
+  increment!(nlp, :neval_jHtprod)
+  Jtv[1:nlp.meta.nvar] .= jacH(nlp, x)' * v
+  return Jtv
+end
+
+function hess_structure!(nlp :: MPCCAmpl, rows :: AbstractVector{<: Integer}, cols :: AbstractVector{<: Integer})
+  n = nlp.meta.nvar
+  I = ((i,j) for i = 1:n, j = 1:n if i ≥ j)
+  rows[1 : nlp.meta.nnzh] .= getindex.(I, 1)
+  cols[1 : nlp.meta.nnzh] .= getindex.(I, 2)
+  return rows, cols
+end
+
+function hess_coord!(nlp :: MPCCAmpl, x :: AbstractVector, vals :: AbstractVector; obj_weight :: Real = one(eltype(x)))
+  increment!(nlp, :neval_hess)
+  Hx = hess(nlp.mp, x, obj_weight = obj_weight)
+  k = 1
+  for j = 1 : nlp.meta.nvar
+    for i = j : nlp.meta.nvar
+      vals[k] = Hx[i, j]
+      k += 1
+    end
+  end
+  return vals
+end
+
+function hess_coord!(nlp :: MPCCAmpl, x :: AbstractVector, y :: AbstractVector, vals :: AbstractVector; obj_weight :: Real = one(eltype(x)))
+  increment!(nlp, :neval_hess)
+  ncon, ncc = nlp.meta.ncon, nlp.meta.ncc
+  I, Icc = getcons(nlp)
+  ylong  = zeros(ncon + ncc)
+  ylong[I] = y[1:ncon]
+  Hx = hess(nlp.mp, x, ylong, obj_weight = obj_weight) - hessG(nlp, x, y[ncon+1:ncon+ncc]) - hessH(nlp, x, y[ncon+ncc+1:ncon+2*ncc])
+  k = 1
+  for j = 1 : nlp.meta.nvar
+    for i = j : nlp.meta.nvar
+      vals[k] = Hx[i, j]
+      k += 1
+    end
+  end
+  return vals
+end
+
+function hessG(nlp :: MPCCAmpl, x :: AbstractVector, y :: AbstractVector)
+  increment!(nlp, :neval_hessG)
+  ncon, ncc = nlp.meta.ncon, nlp.meta.ncc
+  I, Icc = getcons(nlp)
+  ylong  = zeros(ncon + ncc)
+  ylong[Icc] = y[1:ncc]
+  Hx = hess(nlp.mp, x, ylong, obj_weight = 0.0)
+  return tril(Hx)
+end
+
+function hessG_structure!(nlp :: MPCCAmpl, rows :: AbstractVector{<: Integer}, cols :: AbstractVector{<: Integer})
+  n = nlp.meta.nvar
+  I = ((i,j) for i = 1:n, j = 1:n if i ≥ j)
+  rows[1 : nlp.meta.nnzh] .= getindex.(I, 1)
+  cols[1 : nlp.meta.nnzh] .= getindex.(I, 2)
+  return rows, cols
+end
+
+function hessG_coord!(nlp :: MPCCAmpl, x :: AbstractVector, y :: AbstractVector, vals :: AbstractVector)
+  increment!(nlp, :neval_hessG)
+  Hx = hessG(nlp, x, y)
+  k = 1
+  for j = 1 : nlp.meta.nvar
+    for i = j : nlp.meta.nvar
+      vals[k] = Hx[i, j]
+      k += 1
+    end
+  end
+  return vals
+end
+
+function hessH(nlp :: MPCCAmpl, x :: AbstractVector, y :: AbstractVector)
+  increment!(nlp, :neval_hessH)
+  Hx = zeros(nlp.meta.nvar, nlp.meta.nvar)
+  return tril(Hx)
+end
+
+function hessH_structure!(nlp :: MPCCAmpl, rows :: AbstractVector{<: Integer}, cols :: AbstractVector{<: Integer})
+  n = nlp.meta.nvar
+  I = ((i,j) for i = 1:n, j = 1:n if i ≥ j)
+  rows[1 : nlp.meta.nnzh] .= getindex.(I, 1)
+  cols[1 : nlp.meta.nnzh] .= getindex.(I, 2)
+  return rows, cols
+end
+
+function hessH_coord!(nlp :: MPCCAmpl, x :: AbstractVector, y :: AbstractVector, vals :: AbstractVector)
+  increment!(nlp, :neval_hess)
+  Hx = zeros(nlp.meta.nvar, nlp.meta.nvar)
+  k = 1
+  for j = 1 : nlp.meta.nvar
+    for i = j : nlp.meta.nvar
+      vals[k] = Hx[i, j]
+      k += 1
+    end
+  end
+  return vals
+end
+
+function hprod!(nlp :: MPCCAmpl, x :: AbstractVector, v :: AbstractVector, Hv :: AbstractVector; obj_weight :: Real = one(eltype(x)))
+  increment!(nlp, :neval_hprod)
+  Hv .= hprod(nlp.mp, x, v, obj_weight = obj_weight)
+  return Hv
+end
+
+function hprod!(nlp :: MPCCAmpl, x :: AbstractVector, y :: AbstractVector, v :: AbstractVector, Hv :: AbstractVector; obj_weight :: Real = one(eltype(x)))
+  increment!(nlp, :neval_hprod)
+  ncon, ncc = nlp.meta.ncon, nlp.meta.ncc
+  Hv .= hess(nlp, x, y) * v
+  return Hv
+end
+
+function hGprod!(nlp :: MPCCAmpl, x :: AbstractVector, y :: AbstractVector, v :: AbstractVector, Hv :: AbstractVector)
+  increment!(nlp, :neval_hGprod)
+  Hv .= hessG(nlp, x, y) * v
+  return Hv
+end
+
+function hHprod!(nlp :: MPCCAmpl, x :: AbstractVector, y :: AbstractVector, v :: AbstractVector, Hv :: AbstractVector)
+  increment!(nlp, :neval_hHprod)
+  Hv .= hessH(nlp, x, y) * v
+  return Hv
 end
