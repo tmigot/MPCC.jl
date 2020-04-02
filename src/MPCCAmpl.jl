@@ -9,6 +9,8 @@ cvar[i] is > 0 if c_i(x) is involved in a complementarity constraint:
 (lb_i = c_i(x) or c_i(x) = ub_i) OR x[cvar[i]] = 0.
 
 Note: cons(nlp, x) call twice cons(nlp.mp, x) [TO FIX - idem jac, hess]
+
+TODO: connect with https://github.com/tmigot/AmplNLReader.jl/blob/master/src/ampl_cc_model.jl
 """
 mutable struct MPCCAmpl <: AbstractMPCCModel
 
