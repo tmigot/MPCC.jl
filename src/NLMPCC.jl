@@ -70,7 +70,6 @@ function jac(nlp :: NLMPCC, x :: AbstractVector)
  JGx, JHx = jacG(nlp.mod,x),   jacH(nlp.mod,x)
  Gx,  Hx  = consG(nlp.mod, x), consH(nlp.mod, x)
  A = vcat(jac_nl(nlp.mod,x), JGx, JHx, diagm(0 => Hx) * JGx + diagm(0 => Gx) * JHx)
-
  return A
 end
 
@@ -206,6 +205,5 @@ function viol(nlp :: NLMPCC, x :: AbstractVector)
   feas_cp = Float64[]
   feas_cc = Float64[]
  end
-
  return vcat(feas_x, feas_c, feas_cp, feas_cc)
 end

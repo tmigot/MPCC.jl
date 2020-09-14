@@ -103,7 +103,6 @@ function viol!(mod :: AbstractMPCCModel, x :: AbstractVector, c :: AbstractVecto
   end
 
   c[1:n] = max.(max.(mod.meta.lvar - x, 0.0),max.(x - mod.meta.uvar, 0.0))
-
   return c
 end
 
@@ -620,7 +619,7 @@ Return the structure of the Lagrangian Hessian in sparse coordinate format.
 function hess_structure(nlp :: AbstractMPCCModel)
   rows = Vector{Int}(undef, nlp.meta.nnzh)
   cols = Vector{Int}(undef, nlp.meta.nnzh)
-  hess_structure!(nlp, rows, cols)
+  return hess_structure!(nlp, rows, cols)
 end
 
 """
@@ -637,7 +636,7 @@ OBJECTIVE_HESSIAN, rewriting `vals`.
 Only the lower triangle is returned.
 """
 function hess_coord!(nlp :: AbstractMPCCModel, x :: AbstractVector, vals :: AbstractVector; obj_weight :: Real=1.0)
-  hess_coord!(nlp, x, zeros(nlp.meta.ncon), vals, obj_weight=obj_weight)
+  return hess_coord!(nlp, x, zeros(nlp.meta.ncon), vals, obj_weight=obj_weight)
 end
 
 """
@@ -706,7 +705,7 @@ Return the structure of the Lagrangian Hessian in sparse coordinate format.
 function hessG_structure(nlp :: AbstractMPCCModel)
   rows = Vector{Int}(undef, nlp.meta.nnzh)
   cols = Vector{Int}(undef, nlp.meta.nnzh)
-  hessG_structure!(nlp, rows, cols)
+  return hessG_structure!(nlp, rows, cols)
 end
 
 """
@@ -756,7 +755,7 @@ Return the structure of the Lagrangian Hessian in sparse coordinate format.
 function hessH_structure(nlp :: AbstractMPCCModel)
   rows = Vector{Int}(undef, nlp.meta.nnzh)
   cols = Vector{Int}(undef, nlp.meta.nnzh)
-  hessH_structure!(nlp, rows, cols)
+  return hessH_structure!(nlp, rows, cols)
 end
 
 """
@@ -846,7 +845,7 @@ place, with objective function scaled by `obj_weight`, where the objective Hessi
 OBJECTIVE_HESSIAN.
 """
 function hprod!(nlp::AbstractMPCCModel, x::AbstractVector, v::AbstractVector, Hv::AbstractVector; obj_weight :: Real=1.0)
-  hprod!(nlp, x, zeros(nlp.meta.ncon), v, Hv, obj_weight=obj_weight)
+  return hprod!(nlp, x, zeros(nlp.meta.ncon), v, Hv, obj_weight=obj_weight)
 end
 
 """
@@ -865,7 +864,7 @@ place, with objective function scaled by `obj_weight`, where the objective Hessi
 OBJECTIVE_HESSIAN.
 """
 function hGprod!(nlp::AbstractMPCCModel, x::AbstractVector, v::AbstractVector, Hv::AbstractVector)
- hGprod!(nlp, x, zeros(nlp.meta.ncon), v, Hv)
+ return hGprod!(nlp, x, zeros(nlp.meta.ncon), v, Hv)
 end
 
 """
@@ -884,7 +883,7 @@ place, with objective function scaled by `obj_weight`, where the objective Hessi
 OBJECTIVE_HESSIAN.
 """
 function hHprod!(nlp::AbstractMPCCModel, x::AbstractVector, v::AbstractVector, Hv::AbstractVector)
- hHprod!(nlp, x, zeros(nlp.meta.ncon), v, Hv)
+ return hHprod!(nlp, x, zeros(nlp.meta.ncon), v, Hv)
 end
 
 """

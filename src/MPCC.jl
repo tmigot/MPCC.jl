@@ -5,6 +5,8 @@ module MPCC
 using LinearAlgebra, LinearOperators, SparseArrays, FastClosures
 using NLPModels, Printf
 
+using Test
+
 import NLPModels: obj, grad, grad!, objgrad, objgrad!, objcons, objcons!, cons, cons!,
                   jth_con, jth_congrad, jth_congrad!, jth_sparse_congrad,
                   jac_structure!, jac_structure, jac_coord!, jac_coord,

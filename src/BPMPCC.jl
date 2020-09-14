@@ -122,10 +122,19 @@ function JLag(nlp :: BPMPCCModel,
               f   :: Function,
               c   :: Function,
               x   :: AbstractVector)
-    Jtv = zeros(nlp.m)
+
+    Jtv = Array{Union{Nothing, Number}}(nothing, nlp.m)
+
     x0, y0, l1, l2, m1, m2 = _var_bp(nlp, x)
-    lag(x) = nlp.llncon > 0 ? f(x) - dot(c(x), l1-l2) : f(x)
-    Jtv = ForwardDiff.gradient(lag, x)[nlp.n+1:nlp.n+nlp.m] - (m1 - m2)
+
+    Jtv = ForwardDiff.gradient(f, x)[nlp.n+1:nlp.n+nlp.m] - (m1 - m2)
+    increment!(nlp, :neval_grad)
+
+    if nlp.llncon > 0
+        Jtv += - ForwardDiff.jacobian(c, x)[:,nlp.n+1:nlp.n+nlp.m]' * (l1-l2)
+        increment!(nlp, :neval_jac)
+    end
+
     return Jtv
 end
 
@@ -201,10 +210,10 @@ function jac_nl_coord!(nlp  :: BPMPCCModel,
 
   Jx  = ForwardDiff.jacobian(nlp.c, x)
   Jg  = ForwardDiff.jacobian(nlp.g, x)
-  Jyy, Jyx = HLag(nlp, nlp.f1, nlp.g, x)
-  Jyl = llncon >0 ? vcat(Jg[:,n+1:n+m], -Jg[:,n+1:n+m]) : zeros(m, 0)
+  Jyy, Jyx = HLag(nlp, nlp.f2, nlp.g, x)
+  Jyl = llncon >0 ? vcat(Jg[:,n+1:n+m], -Jg[:,n+1:n+m]) : zeros(0, m)
   Jym = hcat(diagm(0 => ones(m)),-diagm(0 => ones(m)))
-  Jl  = hcat(Jyx, Jyy, Jyl, Jym)
+  Jl  = hcat(Jyx, Jyy, Jyl', Jym)
   J   = vcat(Jx, Jl)
 
   vals .= J[:]
