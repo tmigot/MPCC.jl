@@ -36,9 +36,9 @@ stop_nlp_cntrs = MPCCStopping(mpcc, max_cntrs = test_max_cntrs)
 
 x0 = ones(6)
 c(x) = [sum(x)]
-mp2 = ADNLPModel(rosenbrock,  x0,
-                 lvar = fill(-10.0,size(x0)), uvar = fill(10.0,size(x0)),
-                 y0 = [0.0], c = c, lcon = [-Inf], ucon = [6.])
+meta = NLPModelMeta(6, x0=x0, lvar = fill(-10.0,size(x0)), uvar = fill(10.0,size(x0)),
+                    ncon = 1, y0 = [0.0], lcon = [-Inf], ucon = [6.])
+mp2 = ADNLPModel(meta, Counters(), rosenbrock,  c)
 nlp2 = MPCCNLPs(mp2)
 nlp_at_x_c = MPCCAtX(x0, NaN*ones(nlp2.meta.ncon))
 stop_nlp_c = MPCCStopping(nlp2, SStat, nlp_at_x_c)
