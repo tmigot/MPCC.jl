@@ -15,10 +15,10 @@ notifications:
 codecov: true
 coveralls: true
 
-#jobs:
-#  allow_failures:
-#   - julia: nightly
-#   - os: windows
+jobs:
+  allow_failures:
+   - julia: nightly
+   - os: windows
 #  include:
 #    - stage: "Documentation"
 #      julia: 1.1
