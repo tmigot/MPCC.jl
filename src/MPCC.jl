@@ -96,7 +96,7 @@ export MPCCAtX, update!, reinit!
 
 include("MPCCStopping.jl")
 
-export MPCCStopping, _init_max_counters, fill_in!, _resources_check!,
+export MPCCStopping, _init_max_counters_mpcc, fill_in!, _resources_check!,
        _unbounded_problem_check!, _optimality_check,
        start!, stop!, update_and_start!, update_and_stop!, reinit!, status,
        SStat, MStat, CStat, WStat

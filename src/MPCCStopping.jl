@@ -1,6 +1,6 @@
 using Stopping
 
-import Stopping: _init_max_counters_mpcc, fill_in!, _resources_check!, _unbounded_problem_check!, _optimality_check
+import Stopping: _init_max_counters, fill_in!, _resources_check!, _unbounded_problem_check!, _optimality_check
 import Stopping: start!, stop!, update_and_start!, update_and_stop!, reinit!, status
 
 """
@@ -97,29 +97,29 @@ _init_max_counters_mpcc(): initialize the maximum number of evaluations on each 
                         the functions present in the MPCCCounters.
 """
 function _init_max_counters_mpcc(; obj     :: Int64 = 40000,
-                              grad    :: Int64 = 40000,
-                              cons    :: Int64 = 40000,
-                              consG   :: Int64 = 40000,
-                              consH   :: Int64 = 40000,
-                              jcon    :: Int64 = 40000,
-                              jgrad   :: Int64 = 40000,
-                              jac     :: Int64 = 40000,
-                              jacG    :: Int64 = 40000,
-                              jacH    :: Int64 = 40000,
-                              jprod   :: Int64 = 40000,
-                              jGprod  :: Int64 = 40000,
-                              jHprod  :: Int64 = 40000,
-                              jtprod  :: Int64 = 40000,
-                              jGtprod :: Int64 = 40000,
-                              jHtprod :: Int64 = 40000,
-                              hess    :: Int64 = 40000,
-                              hessG   :: Int64 = 40000,
-                              hessH   :: Int64 = 40000,
-                              hprod   :: Int64 = 40000,
-                              hGprod  :: Int64 = 40000,
-                              hHprod  :: Int64 = 40000,
-                              jhprod  :: Int64 = 40000,
-                              sum     :: Int64 = 40000*11)
+                                   grad    :: Int64 = 40000,
+                                   cons    :: Int64 = 40000,
+                                   consG   :: Int64 = 40000,
+                                   consH   :: Int64 = 40000,
+                                   jcon    :: Int64 = 40000,
+                                   jgrad   :: Int64 = 40000,
+                                   jac     :: Int64 = 40000,
+                                   jacG    :: Int64 = 40000,
+                                   jacH    :: Int64 = 40000,
+                                   jprod   :: Int64 = 40000,
+                                   jGprod  :: Int64 = 40000,
+                                   jHprod  :: Int64 = 40000,
+                                   jtprod  :: Int64 = 40000,
+                                   jGtprod :: Int64 = 40000,
+                                   jHtprod :: Int64 = 40000,
+                                   hess    :: Int64 = 40000,
+                                   hessG   :: Int64 = 40000,
+                                   hessH   :: Int64 = 40000,
+                                   hprod   :: Int64 = 40000,
+                                   hGprod  :: Int64 = 40000,
+                                   hHprod  :: Int64 = 40000,
+                                   jhprod  :: Int64 = 40000,
+                                   sum     :: Int64 = 40000*11)
 
   cntrs = Dict([(:neval_obj,       obj), (:neval_grad,   grad),
                 (:neval_cons,     cons), (:neval_jcon,   jcon),
