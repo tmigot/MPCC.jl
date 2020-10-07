@@ -1,6 +1,6 @@
 using Stopping
 
-import Stopping: _init_max_counters, fill_in!, _resources_check!, _unbounded_problem_check!, _optimality_check
+import Stopping: _init_max_counters_mpcc, fill_in!, _resources_check!, _unbounded_problem_check!, _optimality_check
 import Stopping: start!, stop!, update_and_start!, update_and_stop!, reinit!, status
 
 """
@@ -51,7 +51,7 @@ mutable struct MPCCStopping <: AbstractStopping
                          admissible     :: Function,
                          current_state  :: AbstractState;
                          meta           :: AbstractStoppingMeta = StoppingMeta(),
-                         max_cntrs      :: Dict = _init_max_counters(),
+                         max_cntrs      :: Dict = _init_max_counters_mpcc(),
                          main_stp       :: Union{AbstractStopping, Nothing} = nothing,
                          kwargs...)
 
@@ -93,10 +93,10 @@ function MPCCStopping(pb :: AbstractMPCCModel; kwargs...)
 end
 
 """
-_init_max_counters(): initialize the maximum number of evaluations on each of
+_init_max_counters_mpcc(): initialize the maximum number of evaluations on each of
                         the functions present in the MPCCCounters.
 """
-function _init_max_counters(; obj     :: Int64 = 40000,
+function _init_max_counters_mpcc(; obj     :: Int64 = 40000,
                               grad    :: Int64 = 40000,
                               cons    :: Int64 = 40000,
                               consG   :: Int64 = 40000,

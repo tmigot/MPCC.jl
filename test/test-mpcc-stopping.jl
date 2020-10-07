@@ -28,7 +28,7 @@ reinit!(stop_nlp, rstate = true, x = ones(5))
 @test stop_nlp.meta.nb_of_stop == 0
 
 #We know test how to initialize the counter:
-test_max_cntrs = _init_max_counters(obj = 2)
+test_max_cntrs = _init_max_counters_mpcc(obj = 2)
 stop_nlp_cntrs = MPCCStopping(mpcc, max_cntrs = test_max_cntrs)
 @test stop_nlp_cntrs.max_cntrs[:neval_obj] == 2
 @test stop_nlp_cntrs.max_cntrs[:neval_grad] == 40000
