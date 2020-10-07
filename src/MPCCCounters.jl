@@ -5,6 +5,11 @@
 # Problem both NLPModels and MPCC export neval_hess,...
 #####################################################################################
 
+"""
+MPCCCounters
+
+Initialization: `MPCCCounters()`
+"""
 mutable struct MPCCCounters
 
   neval_obj     :: Int  # Number of objective evaluations.
