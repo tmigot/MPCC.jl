@@ -1,11 +1,6 @@
 # MPCC [Package in Dev]
 
-[![Build Status](https://travis-ci.org/tmigot/MPCC.jl.svg?branch=master)](https://travis-ci.org/tmigot/MPCC.jl)
-[![Coverage Status](https://coveralls.io/repos/tmigot/MPCC.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/tmigot/MPCC.jl?branch=julia-0.7)
-[![codecov.io](http://codecov.io/github/tmigot/MPCC.jl/coverage.svg?branch=master)](http://codecov.io/github/tmigot/MPCC.jl?branch=master)
-<!--[![](https://img.shields.io/badge/docs-dev-blue.svg)](https://tmigot.github.io/MPCC.jl/dev/)
--->
-
+Documentation for MPCC.jl.
 
 ## Purpose
 
@@ -17,14 +12,6 @@ The package contains the basic tools to use the [Stopping](https://github.com/Go
 ## Example
 
 More to come...
-
-## Required packages:
-
-[NLPModels](https://github.com/JuliaSmoothOptimizers/NLPModels.jl)
-
-[FastClosures](https://github.com/c42f/FastClosures.jl)
-
-[Stopping](https://github.com/Goysa2/Stopping.jl)
 
 ## TODO
 
