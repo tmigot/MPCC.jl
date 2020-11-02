@@ -35,52 +35,63 @@ Note: * by default, unknown entries are set to nothing (except evals).
       * x and lambda are mandatory entries. If no constraints lambda = [].
       * The constructor check the size of the entries.
 """
-mutable struct 	MPCCAtX <: AbstractState
+mutable struct 	MPCCAtX{T <: AbstractVector} <: AbstractState
 
 #Unconstrained State
-    x            :: Vector     # current point
-    fx           :: FloatVoid   # objective function
-    gx           :: Iterate     # gradient size: x
+    x            :: T     # current point
+    fx           :: Union{eltype(T),Nothing}   # objective function
+    gx           :: Union{T,eltype(T),Nothing}     # gradient size: x
     Hx           :: MatrixType  # hessian size: |x| x |x|
 
 #Bounds State
-    mu           :: Iterate     # Lagrange multipliers with bounds size of |x|
+    mu           :: Union{T,eltype(T),Nothing}     # Lagrange multipliers with bounds size of |x|
 
 #Constrained State
-    cx           :: Iterate     # vector of constraints lc <= c(x) <= uc
+    cx           :: Union{T,eltype(T),Nothing}     # vector of constraints lc <= c(x) <= uc
     Jx           :: MatrixType  # jacobian matrix, size: |lambda| x |x|
-    lambda       :: Vector    # Lagrange multipliers
+    lambda       :: T    # Lagrange multipliers
 
 #Complementarity State
-    cGx           :: Iterate     # vector of constraints lG <= G(x) <= uG
+    cGx           :: Union{T,eltype(T),Nothing}     # vector of constraints lG <= G(x) <= uG
     JGx           :: MatrixType  # jacobian matrix, size: |ncc| x |x|
-    lambdaG       :: Iterate    # Lagrange multipliers
-    cHx           :: Iterate     # vector of constraints lH <= H(x) <= uH
+    lambdaG       :: Union{T,eltype(T),Nothing}    # Lagrange multipliers
+    cHx           :: Union{T,eltype(T),Nothing}     # vector of constraints lH <= H(x) <= uH
     JHx           :: MatrixType  # jacobian matrix, size: |ncc| x |x|
-    lambdaH       :: Iterate    # Lagrange multipliers
+    lambdaH       :: Union{T,eltype(T),Nothing}    # Lagrange multipliers
+
+    d            :: Union{T,eltype(T),Nothing} #search direction
+    res          :: Union{T,eltype(T),Nothing} #residual
 
  #Resources State
-    current_time   :: FloatVoid
+    current_time   :: Union{eltype(T),Nothing}
+    current_score  :: Union{T,eltype(T),Nothing}
     evals          :: MPCCCounters
 
- function MPCCAtX(x            :: Vector,
-                  lambda       :: Vector;
-                  fx           :: FloatVoid    = nothing,
-                  gx           :: Iterate      = nothing,
-                  Hx           :: MatrixType   = nothing,
-                  mu           :: Iterate      = nothing,
-                  cx           :: Iterate      = nothing,
-                  Jx           :: MatrixType   = nothing,
-                  lambdaG      :: Iterate      = nothing,
-                  lambdaH      :: Iterate      = nothing,
-                  cGx          :: Iterate      = nothing,
-                  JGx          :: MatrixType   = nothing,
-                  cHx          :: Iterate      = nothing,
-                  JHx          :: MatrixType   = nothing,
-                  current_time :: FloatVoid    = nothing,
-                  evals        :: MPCCCounters = MPCCCounters())
+ function MPCCAtX(x             :: T,
+                  lambda        :: T;
+                  fx            :: FloatVoid    = nothing,
+                  gx            :: Iterate      = nothing,
+                  Hx            :: MatrixType   = nothing,
+                  mu            :: Iterate      = nothing,
+                  cx            :: Iterate      = nothing,
+                  Jx            :: MatrixType   = nothing,
+                  lambdaG       :: Iterate      = nothing,
+                  lambdaH       :: Iterate      = nothing,
+                  cGx           :: Iterate      = nothing,
+                  JGx           :: MatrixType   = nothing,
+                  cHx           :: Iterate      = nothing,
+                  JHx           :: MatrixType   = nothing,
+                  d             :: Iterate      = nothing,
+                  res           :: Iterate      = nothing,
+                  current_time  :: FloatVoid    = nothing,
+                  current_score :: Iterate     = nothing,
+                  evals         :: MPCCCounters = MPCCCounters()) where T <: AbstractVector
 
-  return new(x, fx, gx, Hx, mu, cx, Jx, lambda, cGx, JGx, lambdaG, cHx, JHx, lambdaH, current_time, evals)
+  return new{T}(x, fx, gx, Hx, mu,
+                cx, Jx, lambda,
+                cGx, JGx, lambdaG,
+                cHx, JHx, lambdaH,
+                d, res, current_time, current_score, evals)
  end
 end
 
@@ -92,12 +103,13 @@ prioritized over the existing x, lambda and the default Counters.
 """
 function reinit!(stateatx :: MPCCAtX, x :: Vector, l :: Vector; kwargs...)
 
- for k ∈ fieldnames(typeof(stateatx))
+ for k ∈ fieldnames(MPCCAtX)
    if !(k ∈ [:x,:lambda,:evals]) setfield!(stateatx, k, nothing) end
  end
 
  return update!(stateatx; x=x, lambda = l, evals = MPCCCounters(), kwargs...)
 end
+
 """
 reinit!: short version of reinit! reusing the x in the state
 

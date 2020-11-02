@@ -10,13 +10,16 @@ Methods: start!, stop!, update_and_start!, update_and_stop!, fill_in!, reinit!, 
 Stopping structure for non-linear programming problems using NLPModels.
     Input :
        - pb         : an AbstractMPCCModel
-       - optimality_check : a stopping criterion through an admissibility function
        - state      : The information relative to the problem, see GenericState
-       - max_cntrs  : Dict contains the max number of evaluations
-       - (opt) meta : Metadata relative to stopping criterion.
+       - (opt) meta : Metadata relative to stopping criterion, see *StoppingMeta*.
        - (opt) main_stp : Stopping of the main loop in case we consider a Stopping
                           of a subproblem.
                           If not a subproblem, then nothing.
+       - (opt) listofstates : ListStates designed to store the history of States.
+       - (opt) user_specific_struct : Contains any structure designed by the user.
+
+`MPCCStopping(:: AbstractMPCCModel, :: AbstractState; meta :: AbstractStoppingMeta = StoppingMeta(), main_stp :: Union{AbstractStopping, Nothing} = nothing, list :: Union{ListStates, Nothing} = nothing, user_specific_struct :: Any = nothing, kwargs...)`
+
 
  Note:
  * optimality_check : takes two inputs (AbstractMPCCModel, MPCCAtX)
@@ -32,14 +35,8 @@ mutable struct MPCCStopping <: AbstractStopping
     # problem
     pb :: AbstractMPCCModel
 
-    # stopping criterion
-    optimality_check :: Function
-
     # Common parameters
     meta      :: AbstractStoppingMeta
-
-    # Parameters specific to the NLPModels
-    max_cntrs :: Dict #contains the max number of evaluations
 
     # current state of the problem
     current_state :: AbstractState
@@ -47,16 +44,21 @@ mutable struct MPCCStopping <: AbstractStopping
     # Stopping of the main problem, or nothing
     main_stp :: Union{AbstractStopping, Nothing}
 
-    function MPCCStopping(pb             :: AbstractMPCCModel,
-                         admissible     :: Function,
+    listofstates :: Union{ListStates, Nothing}
+
+    # User-specific structure
+    user_specific_struct :: Any
+
+    function MPCCStopping(pb            :: AbstractMPCCModel,
                          current_state  :: AbstractState;
-                         meta           :: AbstractStoppingMeta = StoppingMeta(),
-                         max_cntrs      :: Dict = _init_max_counters_mpcc(),
+                         meta           :: AbstractStoppingMeta = StoppingMeta(;max_cntrs = _init_max_counters_mpcc(), optimality_check = MStat),
                          main_stp       :: Union{AbstractStopping, Nothing} = nothing,
+                         listofstates   :: Union{ListStates, Nothing} = nothing,
+                         user_specific_struct :: Any = nothing,
                          kwargs...)
 
         if !(isempty(kwargs))
-           meta = StoppingMeta(;kwargs...)
+           meta = StoppingMeta(;max_cntrs = _init_max_counters_mpcc(), optimality_check = MStat, kwargs...)
         end
 
         #current_state is an AbstractState with requirements
@@ -72,7 +74,7 @@ mutable struct MPCCStopping <: AbstractStopping
             throw("error: missing entries in the given current_state")
         end
 
-        return new(pb, admissible, meta, max_cntrs, current_state, main_stp)
+        return new(pb, meta, current_state, main_stp, listofstates, user_specific_struct)
     end
 
 end
@@ -85,11 +87,12 @@ optimality function is the function KKT().
 key arguments are forwarded to the classical constructor.
 """
 function MPCCStopping(pb :: AbstractMPCCModel; kwargs...)
+    
  #Create a default MPCCAtX
  nlp_at_x = MPCCAtX(pb.meta.x0, pb.meta.y0)
  admissible = (x,y; kwargs...) -> MStat(x,y; kwargs...)
 
- return MPCCStopping(pb, admissible, nlp_at_x; kwargs...)
+ return MPCCStopping(pb, nlp_at_x, optimality_check = admissible; kwargs...)
 end
 
 """
@@ -222,7 +225,7 @@ function _resources_check!(stp    :: MPCCStopping,
   cntrs = stp.pb.counters
   update!(stp.current_state, evals = cntrs)
 
-  max_cntrs = stp.max_cntrs
+  max_cntrs = stp.meta.max_cntrs
 
   # check all the entries in the counter
   max_f = false
@@ -266,19 +269,6 @@ function _unbounded_problem_check!(stp  :: MPCCStopping,
  stp.meta.unbounded_pb = f_too_large || c_too_large
 
  return stp
-end
-
-"""
-_optimality_check: compute the optimality score.
-
-This is the NLP specialized version that takes into account the structure of the
-MPCCStopping where the optimality_check function is an input.
-"""
-function _optimality_check(stp  :: MPCCStopping; kwargs...)
-
- optimality = stp.optimality_check(stp.pb, stp.current_state; kwargs...)
-
- return optimality
 end
 
 ################################################################################

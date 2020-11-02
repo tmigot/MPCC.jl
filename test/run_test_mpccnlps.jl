@@ -1,10 +1,13 @@
 test1bis=JuMP.Model()
 ux(i)=[100;100][i]
 lx(i)=[-100;-100][i]
-JuMP.@variable(test1bis,x[i=1:2], upperbound=ux(i), lowerbound=lx(i),start=1.0)
+#Old JuMP
+#JuMP.@variable(test1bis,x[i=1:2], upperbound=ux(i), lowerbound=lx(i),start=1.0)
+#New JuMP
+JuMP.@variable(test1bis,x[i=1:2], upper_bound=ux(i), lower_bound=lx(i),start=1.0)
 JuMP.@NLobjective(test1bis,Min,x[1]-x[2])
 JuMP.@constraint(test1bis,1-x[2]>=0)
-test1bis = MathProgNLPModel(test1bis)
+test1bis = MathOptNLPModel(test1bis)#MathProgNLPModel(test1bis)
 
 #Test 0: constructor
 test1 = ex1()
@@ -14,11 +17,11 @@ error_G = JuMP.Model()
 JuMP.@variable(error_G,x[1:2],start=1.0)
 JuMP.@constraint(error_G,x[1]>=0)
 JuMP.@NLobjective(error_G,Min,0.0)
-error_G = MathProgNLPModel(error_G)
+error_G = MathOptNLPModel(error_G)#MathProgNLPModel(error_G)
 error_H=JuMP.Model()
 JuMP.@variable(error_H,x[1:2],start=1.0)
 JuMP.@NLobjective(error_H,Min,0.0)
-error_H=MathProgNLPModel(error_H)
+error_H=MathOptNLPModel(error_H) #MathProgNLPModel(error_H)
 try
     error_test = MPCCNLPs(ADNLPModel(rosenbrock, zeros(6)), G = error_G, H = error_H)
     @test false

@@ -6,7 +6,7 @@ f(x) = x' * Q * x
 nlp = ADNLPModel(f, zeros(5))
 mpcc = MPCCNLPs(nlp)
 nlp_at_x = MPCCAtX(zeros(5), zeros(0))
-stop_nlp = MPCCStopping(mpcc, SStat, nlp_at_x, optimality0 = 0.0)
+stop_nlp = MPCCStopping(mpcc, nlp_at_x, optimality0 = 0.0, optimality_check = SStat)
 
 
 a = zeros(5)
@@ -30,9 +30,9 @@ reinit!(stop_nlp, rstate = true, x = ones(5))
 #We know test how to initialize the counter:
 test_max_cntrs = _init_max_counters_mpcc(obj = 2)
 stop_nlp_cntrs = MPCCStopping(mpcc, max_cntrs = test_max_cntrs)
-@test stop_nlp_cntrs.max_cntrs[:neval_obj] == 2
-@test stop_nlp_cntrs.max_cntrs[:neval_grad] == 40000
-@test stop_nlp_cntrs.max_cntrs[:neval_sum] == 40000*11
+@test stop_nlp_cntrs.meta.max_cntrs[:neval_obj] == 2
+@test stop_nlp_cntrs.meta.max_cntrs[:neval_grad] == 40000
+@test stop_nlp_cntrs.meta.max_cntrs[:neval_sum] == 40000*11
 
 x0 = ones(6)
 c(x) = [sum(x)]
@@ -41,7 +41,7 @@ meta = NLPModelMeta(6, x0=x0, lvar = fill(-10.0,size(x0)), uvar = fill(10.0,size
 mp2 = ADNLPModel(meta, Counters(), rosenbrock,  c)
 nlp2 = MPCCNLPs(mp2)
 nlp_at_x_c = MPCCAtX(x0, NaN*ones(nlp2.meta.ncon))
-stop_nlp_c = MPCCStopping(nlp2, SStat, nlp_at_x_c)
+stop_nlp_c = MPCCStopping(nlp2, nlp_at_x_c, optimality_check = SStat)
 
 a = zeros(6)
 fill_in!(stop_nlp_c, a)
@@ -65,14 +65,14 @@ fill_in!(stop_nlp_default, sol)
 
 #Keywords in the stop! call
 nlp_at_x_kargs = MPCCAtX(x0, NaN*ones(nlp2.meta.ncon))
-stop_nlp_kargs = MPCCStopping(nlp2, (x,y; test = 1.0, kwargs...) -> MStat(x,y; kwargs...) + test, nlp_at_x_c)
+stop_nlp_kargs = MPCCStopping(nlp2, nlp_at_x_c, optimality_check = (x,y; test = 1.0, kwargs...) -> MStat(x,y; kwargs...) + test)
 fill_in!(stop_nlp_kargs, sol)
 @test stop!(stop_nlp_kargs) == false
 @test stop!(stop_nlp_kargs, test = 0.0) == true
 
 test1 = ex1()
-stop_w = MPCCStopping(test1, WStat, MPCCAtX(x0, zeros(nlp2.meta.ncon)))
-stop_s = MPCCStopping(test1, SStat, MPCCAtX(x0, zeros(nlp2.meta.ncon)))
+stop_w = MPCCStopping(test1, MPCCAtX(x0, zeros(nlp2.meta.ncon)), optimality_check = WStat)
+stop_s = MPCCStopping(test1, MPCCAtX(x0, zeros(nlp2.meta.ncon)), optimality_check = SStat)
 Wpoint, Spoint = zeros(2), [0.0, 1.0]
 fill_in!(stop_w, Wpoint)
 @test stop_w.current_state.lambdaG == [1.0]
@@ -89,7 +89,7 @@ fill_in!(stop_s, Spoint)
 stop!(stop_s)
 @test status(stop_s) == :Optimal
 reinit!(stop_s)
-stop_s.optimality_check = WStat
+stop_s.meta.optimality_check = WStat
 stop!(stop_s)
 @test status(stop_s) == :Optimal
 
@@ -100,8 +100,8 @@ reset!(stop_s.pb)
 @test neval_consG(stop_s.pb) == 0
 
 testM = ex3()
-stop_m = MPCCStopping(testM, MStat, MPCCAtX(zeros(3), zeros(2)))
-stop_c = MPCCStopping(testM, CStat, MPCCAtX(zeros(3), zeros(2)))
+stop_m = MPCCStopping(testM, MPCCAtX(zeros(3), zeros(2)), optimality_check = MStat)
+stop_c = MPCCStopping(testM, MPCCAtX(zeros(3), zeros(2)), optimality_check = CStat)
 fill_in!(stop_m, zeros(3))
 #the sign computed by fill_in are not M-stat. optimized
 update_and_stop!(stop_m, lambda = [0.75, 0.25], lambdaG = [-2.0], lambdaH = [0.0])
@@ -113,7 +113,7 @@ stop!(stop_c)
 
 #Unconstrained MPCC:
 test_unc = MPCCNLPs(ADNLPModel(rosenbrock, zeros(6)))
-stop_unc = MPCCStopping(test_unc, MStat, MPCCAtX(zeros(6), zeros(0)))
+stop_unc = MPCCStopping(test_unc, MPCCAtX(zeros(6), zeros(0)), optimality_check = MStat)
 fill_in!(stop_unc, ones(6))
 @test stop_unc.current_state.lambda == zeros(0)
 @test stop_unc.current_state.lambdaG == nothing

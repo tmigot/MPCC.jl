@@ -24,7 +24,7 @@ More to come...
 
 [FastClosures](https://github.com/c42f/FastClosures.jl)
 
-[Stopping](https://github.com/Goysa2/Stopping.jl)
+[Stopping](https://github.com/vepiteski/Stopping.jl)
 
 ## TODO
 
