@@ -15,11 +15,3 @@ FastClosures = "9aa1b823-49e4-5ca5-8b0f-3971ec8bab6a"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 JuMP = "4076af6c-e467-56ae-b986-b466b2749572"
 NLPModelsJuMP = "792afdf1-32c1-5681-94e0-d7bf7a5df49e"
-
-[compat]
-FastClosures = "0.2.1, 0.3.0"
-ForwardDiff = "0.9.0, 0.10.0"
-LinearOperators = "0.7.0, 1"
-#NLPModels = "0.10.0, 1"
-julia = "^1.1.0"
-Stopping = "^0.2.0"
