@@ -9,12 +9,41 @@ using NLPModels
 include("problems.jl")
 include("rosenbrock.jl")
 
-printstyled("MPCCMeta tests... ")
-include("test-mpcc-meta.jl")
-printstyled("passed ✓ \n", color = :green)
-printstyled("MPCCCounters tests... ")
-include("test-mpcc-counters.jl")
-printstyled("passed ✓ \n", color = :green)
+@testset "MPCCMeta tests" begin
+  test_meta = MPCCModelMeta()
+
+  @test test_meta.ncc   == 0             # number of complementarity constraints
+  @test test_meta.yG   == zeros(0)    # initial Lagrange multipliers
+  @test test_meta.yH   == zeros(0)    # initial Lagrange multipliers
+  @test test_meta.lccG  == zeros(0)   # vector of constraint lower bounds of the complementarity constraint
+  @test test_meta.lccH  == zeros(0)   # vector of constraint upper bounds of the complementarity constraint
+  @test complementarity_constrained(test_meta) == false
+end
+
+@testset "MPCCCounters tests" begin
+  try_counters = MPCCCounters()
+
+  @test getfield(try_counters, :neval_consG)   == 0
+  @test getfield(try_counters, :neval_consH)   == 0
+  @test getfield(try_counters, :neval_jacG)    == 0
+  @test getfield(try_counters, :neval_jacH)    == 0
+  @test getfield(try_counters, :neval_jGprod)  == 0
+  @test getfield(try_counters, :neval_jHprod)  == 0
+  @test getfield(try_counters, :neval_jGtprod) == 0
+  @test getfield(try_counters, :neval_jHtprod) == 0
+  @test getfield(try_counters, :neval_hessG)   == 0
+  @test getfield(try_counters, :neval_hessH)   == 0
+  @test getfield(try_counters, :neval_hGprod)  == 0
+  @test getfield(try_counters, :neval_hHprod)  == 0
+
+  @test sum_counters(try_counters) == 0
+
+  reset!(try_counters)
+  @test sum_counters(try_counters) == 0
+
+end
+
+#=
 printstyled("ADMPCC tests... ")
 include("run_test_admpcc.jl")
 printstyled("passed ✓ \n", color = :green)
@@ -36,3 +65,4 @@ printstyled("passed ✓ \n", color = :green)
 printstyled("MPCCStopping tests... ")
 include("test-mpcc-stopping.jl")
 printstyled("passed ✓ \n", color = :green)
+=#

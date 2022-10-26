@@ -1,5 +1,3 @@
-__precompile__()
-
 module MPCC
 
 using LinearAlgebra, LinearOperators, SparseArrays, FastClosures
@@ -19,13 +17,14 @@ import NLPModels: obj, grad, grad!, objgrad, objgrad!, objcons, objcons!, cons, 
 using NLPModels: @lencheck, @rangecheck
 
 """
-Introduce the MPCC :
-min f(x)
-l <= x <= u
-lb <= c(x) <= ub
-0 <= G(x) _|_ H(x) >= 0
+Base type for an optimization model with degenerate constraints.
+
+    min f(x)
+    l <= x <= u
+    lb <= c(x) <= ub
+    0 <= G(x) _|_ H(x) >= 0
 """
-abstract type AbstractMPCCModel end
+abstract type AbstractMPCCModel{T, S} end
 
 #####################################################################################
 # MPCCModelMeta type ; based on NLPModelMeta:
@@ -68,6 +67,7 @@ export AbstractMPCCModel,
        hprod, hprod!, hGprod, hGprod!,hHprod, hHprod!,
        hess_op, hess_op!,hessG_op, hessG_op!,hessH_op, hessH_op!
 
+#=
 using ForwardDiff
 
 include("ADMPCC.jl")
@@ -100,5 +100,5 @@ export MPCCStopping, _init_max_counters_mpcc, fill_in!, _resources_check!,
        _unbounded_problem_check!, _optimality_check,
        start!, stop!, update_and_start!, update_and_stop!, reinit!, status,
        SStat, MStat, CStat, WStat
-
+=#
 end #end of module

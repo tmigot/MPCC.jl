@@ -12,32 +12,21 @@ Initialization: `MPCCCounters()`
 """
 mutable struct MPCCCounters
 
-  neval_obj     :: Int  # Number of objective evaluations.
-  neval_grad    :: Int  # Number of objective gradient evaluations.
-  neval_cons    :: Int  # Number of constraint vector evaluations.
   neval_consG   :: Int  # Number of constraint vector evaluations of G(x).
   neval_consH   :: Int  # Number of constraint vector evaluations of H(x).
-  neval_jcon    :: Int  # Number of individual constraint evaluations.
-  neval_jgrad   :: Int  # Number of individual constraint gradient evaluations.
-  neval_jac     :: Int  # Number of constraint Jacobian evaluations.
   neval_jacG    :: Int  # Number of constraint Jacobian evaluations of G(x).
   neval_jacH    :: Int  # Number of constraint Jacobian evaluations of H(x).
-  neval_jprod   :: Int  # Number of Jacobian-vector products.
   neval_jGprod  :: Int  # Number of Jacobian-vector products.
   neval_jHprod  :: Int  # Number of Jacobian-vector products.
-  neval_jtprod  :: Int  # Number of transposed Jacobian-vector products.
   neval_jGtprod :: Int  # Number of transposed Jacobian-vector products.
   neval_jHtprod :: Int  # Number of transposed Jacobian-vector products.
-  neval_hess    :: Int  # Number of Lagrangian/objective Hessian evaluations.
   neval_hessG   :: Int  # Number of Lagrangian/objective Hessian evaluations.
   neval_hessH   :: Int  # Number of Lagrangian/objective Hessian evaluations.
-  neval_hprod   :: Int  # Number of Lagrangian/objective Hessian-vector products.
   neval_hGprod  :: Int  # Number of Lagrangian/objective Hessian-vector products.
   neval_hHprod  :: Int  # Number of Lagrangian/objective Hessian-vector products.
-  neval_jhprod  :: Int  # Number of individual constraint Hessian-vector products.
 
   function MPCCCounters()
-    return new(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+    return new(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
   end
 end
 
