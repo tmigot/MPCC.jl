@@ -1,11 +1,10 @@
 # MPCC [Package in Dev]
 
-[![Build Status](https://travis-ci.org/tmigot/MPCC.jl.svg?branch=master)](https://travis-ci.org/tmigot/MPCC.jl)
-[![Coverage Status](https://coveralls.io/repos/tmigot/MPCC.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/tmigot/MPCC.jl?branch=julia-0.7)
-[![codecov.io](http://codecov.io/github/tmigot/MPCC.jl/coverage.svg?branch=master)](http://codecov.io/github/tmigot/MPCC.jl?branch=master)
-<!--[![](https://img.shields.io/badge/docs-dev-blue.svg)](https://tmigot.github.io/MPCC.jl/dev/)
--->
-
+[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://tmigot.github.io/MPCC.jl/stable)
+[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://tmigot.github.io/MPCC.jl/dev)
+[![Build Status](https://github.com/tmigot/MPCC.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/tmigot/MPCC.jl/actions/workflows/CI.yml?query=branch%3Amain)
+[![Build Status](https://api.cirrus-ci.com/github/tmigot/MPCC.jl.svg)](https://cirrus-ci.com/github/tmigot/MPCC.jl)
+[![Coverage](https://codecov.io/gh/tmigot/MPCC.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/tmigot/MPCC.jl)
 
 ## Purpose
 
