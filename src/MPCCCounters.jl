@@ -47,7 +47,11 @@ end
 Increment counter `s` of problem `nlp`.
 """
 function increment!(nlp :: AbstractMPCCModel, s :: Symbol)
-  setfield!(nlp.counters, s, getfield(nlp.counters, s) + 1)
+  if s in fieldnames(MPCCCounters)
+    setfield!(nlp.cc_counters, s, getfield(nlp.cc_counters, s) + 1)
+  else
+    setfield!(nlp.counters, s, getfield(nlp.counters, s) + 1)
+  end
 end
 
 """
@@ -56,21 +60,11 @@ Increment counter `s` of problem `nlp`.
 """
 function decrement!(nlp :: AbstractMPCCModel, s :: Symbol)
   if s in fieldnames(MPCCCounters)
+    setfield!(nlp.cc_counters, s, getfield(nlp.cc_counters, s) - 1)
+  else
     setfield!(nlp.counters, s, getfield(nlp.counters, s) - 1)
   end
 end
-
-"""
-    sum_counters(counters)
-Sum all counters of `counters`.
-"""
-sum_counters(c :: MPCCCounters) = sum(getfield(c, x) for x in fieldnames(MPCCCounters))
-
-"""
-    sum_counters(nlp)
-Sum all counters of problem `nlp`.
-"""
-sum_counters(nlp :: AbstractMPCCModel) = sum_counters(nlp.counters)
 
 """
     reset!(counters)
@@ -88,6 +82,6 @@ end
 Reset evaluation count in `nlp`
 """
 function reset!(nlp :: AbstractMPCCModel)
-  reset!(nlp.counters)
+  reset!(nlp.cc_counters)
   return nlp
 end

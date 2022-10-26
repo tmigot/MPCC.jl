@@ -24,23 +24,12 @@ Base type for an optimization model with degenerate constraints.
     lb <= c(x) <= ub
     0 <= G(x) _|_ H(x) >= 0
 """
-abstract type AbstractMPCCModel{T, S} end
+abstract type AbstractMPCCModel{T, S} <: AbstractNLPModel{T, S} end
 
-#####################################################################################
-# MPCCModelMeta type ; based on NLPModelMeta:
-# https://github.com/JuliaSmoothOptimizers/NLPModels.jl/blob/master/src/nlp_types.jl
-#####################################################################################
 include("MPCCModelMeta.jl")
 
-export AbstractMPCCModelMeta, MPCCModelMeta, print,
-       has_bounds, bound_constrained, unconstrained,
-       linearly_constrained, equality_constrained,
-       inequality_constrained, complementarity_constrained
+export AbstractMPCCModelMeta, MPCCModelMeta, complementarity_constrained
 
-#####################################################################################
-# MPCCMCounters type ; based on NLPModels Counters:
-# https://github.com/JuliaSmoothOptimizers/NLPModels.jl/blob/master/src/nlp_types.jl
-#####################################################################################
 include("MPCCCounters.jl")
 
 export MPCCCounters, increment!, reset!, sum_counters, decrement!
@@ -67,13 +56,12 @@ export AbstractMPCCModel,
        hprod, hprod!, hGprod, hGprod!,hHprod, hHprod!,
        hess_op, hess_op!,hessG_op, hessG_op!,hessH_op, hessH_op!
 
-#=
-using ForwardDiff
+using ADNLPModels, ForwardDiff
 
 include("ADMPCC.jl")
 
 export ADMPCCModel
-
+#=
 include("MPCCNLPs.jl")
 
 export MPCCNLPs, jacl, jac_actif

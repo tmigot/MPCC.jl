@@ -35,21 +35,24 @@ struct MPCCModelMeta{T, S} <: AbstractMPCCModelMeta{T, S}
   yH   :: S    # initial Lagrange multipliers
   lccG  :: S    # vector of constraint lower bounds of the complementarity constraint
   lccH  :: S    # vector of constraint upper bounds of the complementarity constraint
+  nnzjG
+  nnzjH
 end
 
-function  MPCCModelMeta{T, S}(;
-  ncc = 0,
+function  MPCCModelMeta{T, S}(nvar, ncc;
   yG::S = fill!(S(undef, ncc), zero(T)),
   yH::S = fill!(S(undef, ncc), zero(T)),
   lccG::S = fill!(S(undef, ncc), T(-Inf)),
   lccH::S = fill!(S(undef, ncc), T(Inf)),
+  nnzjG = ncc * nvar,
+  nnzjH = ncc * nvar,
   ) where {T, S}
   @lencheck ncc lccG lccH yG yH
-  MPCCModelMeta{T, S}(ncc, yG, yH, lccG, lccH)
+  MPCCModelMeta{T, S}(ncc, yG, yH, lccG, lccH, nnzjG, nnzjH)
 end
 
-MPCCModelMeta(; ncc = 0, yG::S = zeros(ncc), kwargs...) where {S} =
-  MPCCModelMeta{eltype(S), S}(ncc = ncc, yG = yG; kwargs...)
+MPCCModelMeta(nvar, ncc; yG::S = zeros(ncc), kwargs...) where {S} =
+  MPCCModelMeta{eltype(S), S}(nvar, ncc, yG = yG; kwargs...)
 
 """
     complementarity_constrained(nlp)

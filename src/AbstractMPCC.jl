@@ -3,7 +3,7 @@
 Evaluate ``c(x)``, the constraints at `x`.
 """
 function viol(nlp::AbstractMPCCModel, x::AbstractVector)
-  c = similar(x, nlp.meta.nvar+nlp.meta.ncon+3*nlp.meta.ncc)
+  c = similar(x, nlp.meta.nvar+nlp.meta.ncon+3*nlp.cc_meta.ncc)
   return viol!(nlp, x, c)
 end
 
@@ -40,7 +40,7 @@ end
 Evaluate ``G(x)``, the constraints at `x`.
 """
 function consG(nlp :: AbstractMPCCModel, x :: AbstractVector)
- c = similar(x, nlp.meta.ncc)
+ c = similar(x, nlp.cc_meta.ncc)
  return consG!(nlp, x, c)
 end
 
@@ -51,7 +51,7 @@ consG!(::AbstractMPCCModel, ::AbstractVector, ::AbstractVector) =
 Evaluate ``G(x)``, the constraints at `x`.
 """
 function consH(nlp :: AbstractMPCCModel, x :: AbstractVector)
- c = similar(x, nlp.meta.ncc)
+ c = similar(x, nlp.cc_meta.ncc)
  return consH!(nlp, x, c)
 end
 
@@ -63,8 +63,8 @@ consH!(::AbstractMPCCModel, ::AbstractVector, ::AbstractVector) =
 Return the structure of the constraint's Jacobian in sparse coordinate format.
 """
 function jacG_structure(nlp :: AbstractMPCCModel)
-  rows = Vector{Int}(undef, nlp.meta.nvar * nlp.meta.ncc)
-  cols = Vector{Int}(undef, nlp.meta.nvar * nlp.meta.ncc)
+  rows = Vector{Int}(undef, nlp.cc_meta.nnzjG)
+  cols = Vector{Int}(undef, nlp.cc_meta.nnzjG)
   return jacG_structure!(nlp, rows, cols)
 end
 
@@ -86,7 +86,7 @@ jacG_coord!(:: AbstractMPCCModel, :: AbstractVector, ::AbstractVector) = throw(N
 Evaluate ``∇G(x)``, the constraint's Jacobian at `x` in sparse coordinate format.
 """
 function jacG_coord(nlp :: AbstractMPCCModel, x :: AbstractVector)
-  vals = Vector{eltype(x)}(undef, nlp.meta.nvar * nlp.meta.ncc)
+  vals = Vector{eltype(x)}(undef, nlp.cc_meta.nnzjG)
   return jacG_coord!(nlp, x, vals)
 end
 """
@@ -96,7 +96,7 @@ Evaluate ``∇G(x)``, the constraint's Jacobian at `x` as a sparse matrix.
 function jacG(nlp :: AbstractMPCCModel, x :: AbstractVector)
   rows, cols = jacG_structure(nlp)
   vals = jacG_coord(nlp, x)
-  return sparse(rows, cols, vals, nlp.meta.ncc, nlp.meta.nvar)
+  return sparse(rows, cols, vals, nlp.cc_meta.ncc, nlp.meta.nvar)
 end
 
 """
@@ -104,8 +104,8 @@ end
 Return the structure of the constraint's Jacobian in sparse coordinate format.
 """
 function jacH_structure(nlp :: AbstractMPCCModel)
-  rows = Vector{Int}(undef, nlp.meta.nvar * nlp.meta.ncc)
-  cols = Vector{Int}(undef, nlp.meta.nvar * nlp.meta.ncc)
+  rows = Vector{Int}(undef, nlp.cc_meta.nnzjH)
+  cols = Vector{Int}(undef, nlp.cc_meta.nnzjH)
   return jacH_structure!(nlp, rows, cols)
 end
 
@@ -127,7 +127,7 @@ jacH_coord!(:: AbstractMPCCModel, :: AbstractVector, ::AbstractVector) = throw(N
 Evaluate ``∇H(x)``, the constraint's Jacobian at `x` in sparse coordinate format.
 """
 function jacH_coord(nlp :: AbstractMPCCModel, x :: AbstractVector)
-  vals = Vector{eltype(x)}(undef, nlp.meta.nvar * nlp.meta.ncc)
+  vals = Vector{eltype(x)}(undef, nlp.cc_meta.nnzjH)
   return jacH_coord!(nlp, x, vals)
 end
 """
@@ -137,7 +137,7 @@ Evaluate ``∇H(x)``, the constraint's Jacobian at `x` as a sparse matrix.
 function jacH(nlp :: AbstractMPCCModel, x :: AbstractVector)
   rows, cols = jacH_structure(nlp)
   vals = jacH_coord(nlp, x)
-  return sparse(rows, cols, vals, nlp.meta.ncc, nlp.meta.nvar)
+  return sparse(rows, cols, vals, nlp.cc_meta.ncc, nlp.meta.nvar)
 end
 
 """
@@ -145,16 +145,16 @@ end
 Evaluate ``∇G(x)v``, the Jacobian-vector product at `x`.
 """
 function jGprod(nlp::AbstractMPCCModel, x::AbstractVector, v::AbstractVector)
-  Jv = similar(v, nlp.meta.ncc)
+  Jv = similar(v, nlp.cc_meta.ncc)
   return jGprod!(nlp, x, v, Jv)
 end
 
 """
-    JHv = jprod(nlp, x, v)
+    JHv = jHprod(nlp, x, v)
 Evaluate ``∇H(x)v``, the Jacobian-vector product at `x`.
 """
 function jHprod(nlp::AbstractMPCCModel, x::AbstractVector, v::AbstractVector)
-  Jv = similar(v, nlp.meta.ncc)
+  Jv = similar(v, nlp.cc_meta.ncc)
   return jHprod!(nlp, x, v, Jv)
 end
 
@@ -182,7 +182,7 @@ function jGtprod(nlp::AbstractMPCCModel, x::AbstractVector, v::AbstractVector)
 end
 
 """
-    JHtv = jtprod(nlp, x, v, Jtv)
+    JHtv = jHtprod(nlp, x, v, Jtv)
 Evaluate ``∇H(x)^Tv``, the transposed-Jacobian-vector product at `x`.
 """
 function jHtprod(nlp::AbstractMPCCModel, x::AbstractVector, v::AbstractVector)
@@ -455,4 +455,75 @@ function hessG_op!(nlp :: AbstractMPCCModel, x :: AbstractVector, y :: AbstractV
   prod = @closure v -> hGprod!(nlp, x, y, v, Hv)
   return LinearOperator{eltype(x)}(nlp.meta.nvar, nlp.meta.nvar,
                                    true, true, prod, prod, prod)
+end
+
+function hess_coord(
+  nlp::AbstractNLPModel,
+  x::AbstractVector,
+  y::AbstractVector;
+  obj_weight::Real = one(eltype(x)),
+)
+  @lencheck nlp.meta.nvar x
+  @lencheck (nlp.meta.ncon + 2 * nlp.cc_meta.ncc) y
+  vals = Vector{eltype(x)}(undef, nlp.meta.nnzh)
+  return hess_coord!(nlp, x, y, vals; obj_weight = obj_weight)
+end
+
+function hess(
+  nlp::AbstractMPCCModel,
+  x::AbstractVector,
+  y::AbstractVector;
+  obj_weight::Real = one(eltype(x)),
+)
+  @lencheck nlp.meta.nvar x
+  @lencheck (nlp.meta.ncon + 2 * nlp.cc_meta.ncc) y
+  rows, cols = hess_structure(nlp)
+  vals = hess_coord(nlp, x, y, obj_weight = obj_weight)
+  Symmetric(sparse(rows, cols, vals, nlp.meta.nvar, nlp.meta.nvar), :L)
+end
+
+function hprod(
+  nlp::AbstractMPCCModel,
+  x::AbstractVector,
+  y::AbstractVector,
+  v::AbstractVector;
+  obj_weight::Real = one(eltype(x)),
+)
+  @lencheck nlp.meta.nvar x v
+  @lencheck (nlp.meta.ncon + 2 * nlp.cc_meta.ncc) y
+  Hv = similar(x)
+  return hprod!(nlp, x, y, v, Hv; obj_weight = obj_weight)
+end
+
+function hess_op(
+  nlp::AbstractMPCCModel{T, S},
+  x::AbstractVector{T},
+  y::AbstractVector;
+  obj_weight::Real = one(T),
+) where {T, S}
+  @lencheck nlp.meta.nvar x
+  @lencheck (nlp.meta.ncon + 2 * nlp.cc_meta.ncc) y
+  Hv = S(undef, nlp.meta.nvar)
+  return hess_op!(nlp, x, y, Hv, obj_weight = obj_weight)
+end
+
+function hess_op!(
+  nlp::AbstractMPCCModel,
+  x::AbstractVector,
+  y::AbstractVector,
+  Hv::AbstractVector;
+  obj_weight::Real = one(eltype(x)),
+)
+  @lencheck nlp.meta.nvar x Hv
+  @lencheck (nlp.meta.ncon + 2 * nlp.cc_meta.ncc) y
+  prod! = @closure (res, v, α, β) -> begin
+    hprod!(nlp, x, y, v, Hv; obj_weight = obj_weight)
+    if β == 0
+      @. res = α * Hv
+    else
+      @. res = α * Hv + β * res
+    end
+    return res
+  end
+  return LinearOperator{eltype(x)}(nlp.meta.nvar, nlp.meta.nvar, true, true, prod!, prod!, prod!)
 end
