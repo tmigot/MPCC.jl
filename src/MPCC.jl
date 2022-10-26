@@ -61,11 +61,12 @@ using ADNLPModels, ForwardDiff
 include("ADMPCC.jl")
 
 export ADMPCCModel
-#=
+
 include("MPCCNLPs.jl")
 
-export MPCCNLPs, jacl, jac_actif
+export MPCCNLPs #, jacl, jac_actif
 
+#=
 include("BPMPCC.jl")
 
 export BPMPCCModel
