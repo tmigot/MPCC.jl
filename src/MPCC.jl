@@ -181,6 +181,14 @@ include("NLMPCC.jl")
 
 export NLMPCC
 
+using Stopping
+
+import Stopping: reinit!, update!, _init_field
+
+include("MPCCState.jl")
+
+export MPCCAtX
+
 #=
 include("BPMPCC.jl")
 
