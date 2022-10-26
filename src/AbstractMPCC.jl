@@ -458,7 +458,7 @@ function hessG_op!(nlp :: AbstractMPCCModel, x :: AbstractVector, y :: AbstractV
 end
 
 function hess_coord(
-  nlp::AbstractNLPModel,
+  nlp::AbstractMPCCModel,
   x::AbstractVector,
   y::AbstractVector;
   obj_weight::Real = one(eltype(x)),

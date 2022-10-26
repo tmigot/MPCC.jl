@@ -22,6 +22,9 @@ function MPCCNLPs(
   nvar = mp.meta.nvar
   @lencheck nvar G.meta.x0 H.meta.x0
   cc_meta = MPCCModelMeta(nvar, ncc, lccG = G.meta.lcon, lccH = H.meta.lcon, yG = G.meta.y0, yH = H.meta.y0, nnzjG = G.meta.nnzj, nnzjH = H.meta.nnzj)
+
+  nnzh = mp.meta.nnzh + G.meta.nnzh + H.meta.nnzh
+
   return MPCCNLPs(mp, G, H, mp.meta, cc_meta, Counters(), MPCCCounters())
 end
 
