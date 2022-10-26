@@ -16,7 +16,7 @@ function ex1()
 	JuMP.@NLobjective(H,Min,0.0)
 	H=MathOptNLPModel(H)#MathProgNLPModel(H)
 
- return MPCCNLPs(ex1,G = G,H = H)
+ return MPCCNLPs(ex1, G, H)
 end
 
 function ex1bd()
@@ -37,7 +37,7 @@ function ex1bd()
 	JuMP.@NLobjective(H,Min,0.0)
 	H=MathOptNLPModel(H) #MathProgNLPModel(H)
 
- return MPCCNLPs(ex1bd,G = G,H = H)
+ return MPCCNLPs(ex1bd, G, H)
 end
 
 function ex2()
@@ -57,7 +57,7 @@ function ex2()
 	JuMP.@NLobjective(H,Min,0.0)
 	H=MathOptNLPModel(H) #MathProgNLPModel(H)
 
- return MPCCNLPs(ex2,G = G,H = H)
+ return MPCCNLPs(ex2, G, H)
 end
 
 # Exemple 3 :
@@ -84,7 +84,7 @@ function ex3()
 	JuMP.@NLobjective(H,Min,0.0)
 	H=MathOptNLPModel(H) #MathProgNLPModel(H)
 
- return MPCCNLPs(ex3,G = G,H = H)
+ return MPCCNLPs(ex3, G, H)
 end
 
 #Bard1 (MacMPEC)
@@ -110,5 +110,5 @@ function bard1()
 	JuMP.@NLobjective(H,Min,0.0)
 	H=MathOptNLPModel(H) #MathProgNLPModel(H)
 
- return MPCCNLPs(ex3,G = G,H = H)
+ return MPCCNLPs(ex3, G, H)
 end

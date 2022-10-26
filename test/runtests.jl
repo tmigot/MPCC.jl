@@ -10,6 +10,50 @@ using NLPModels
 include("problems.jl")
 include("rosenbrock.jl")
 
+@testset "NLMPCC tests" begin
+  f = x -> sum(x)
+  x0 = ones(2)
+  G(x) = [x[1]]
+  H(x) = [x[2]]
+  lccg, lcch = zeros(1), zeros(1)
+  lvar, uvar = fill(-10.0, size(x0)), fill(10.0,size(x0))
+  c = x -> [x[1]]
+  lcon, ucon = zeros(1), zeros(1)
+  admpcc = ADMPCCModel(G, H, lccg, lcch, f, x0, c, lcon, ucon, lvar = lvar, uvar = uvar)
+  nlp = NLMPCC(admpcc)
+
+  @test nlp.mod.cc_meta.ncc == 1
+
+  @test nlp.meta.nvar == 2
+  @test nlp.meta.lvar == [-Inf, -Inf]
+  @test nlp.meta.uvar == [Inf, Inf]
+
+  @test nlp.meta.ncon == 4
+  @test nlp.meta.lcon == [0.0, -0.0, -0.0, -Inf]
+  @test nlp.meta.ucon == [0.0, Inf, Inf, 0.0]
+
+  @test obj(nlp, nlp.meta.x0) == 2
+  @test grad(nlp, nlp.meta.x0) == grad(admpcc,x0)
+  @test hess(nlp, nlp.meta.x0) == zeros(2,2)
+  @test hess(nlp, nlp.meta.x0, obj_weight = 0.0) == zeros(2,2)
+
+  t0 = ones(2)
+  @test cons(nlp, t0) == [1, 1, 1, 1]
+  @test jac(nlp, t0) == [1 0 ; 1 0 ; 0 1 ; 1 1]
+  @test jac_coord(nlp, t0) == jac(nlp, t0)[:]
+  @test jac_structure(nlp) == ([1, 2, 3, 4, 1, 2, 3, 4], [1, 1, 1, 1, 2, 2, 2, 2])
+  @test jprod(nlp, t0, zeros(2))  == zeros(4)
+  @test jtprod(nlp, t0, zeros(4)) == zeros(2)
+  @test hess(nlp, t0, ones(4)) == [0.0 1.0; 1.0 0.0]
+  @test length(hess_coord(nlp, t0)) == 3
+  @test length(hess_coord(nlp, t0, ones(4))) == 3
+  @test hess_structure(nlp) == ([1, 2, 2], [1, 1, 2])
+  @test hprod(nlp, t0, ones(4), nlp.meta.x0) == [2.0, 2.0]
+  @test hprod(nlp, t0, nlp.meta.x0) == zeros(2)
+
+  @test viol(nlp, t0) == [0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0]
+end
+
 @testset "MPCCMeta tests" begin
   test_meta = MPCCModelMeta(6, 0)
 
@@ -160,9 +204,6 @@ end
 end
 
 #=
-printstyled("NLMPCC tests... ")
-include("test-mpcc-nlmpcc.jl")
-printstyled("passed ✓ \n", color = :green)
 printstyled("Bilevel Programming MPCC tests... ")
 include("run_test_bpmpcc.jl")
 printstyled("passed ✓ \n", color = :green)

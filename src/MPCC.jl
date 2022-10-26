@@ -66,6 +66,10 @@ include("MPCCNLPs.jl")
 
 export MPCCNLPs #, jacl, jac_actif
 
+include("NLMPCC.jl")
+
+export NLMPCC
+
 #=
 include("BPMPCC.jl")
 
@@ -74,10 +78,6 @@ export BPMPCCModel
 include("MPCCAmpl.jl")
 
 export MPCCAmpl
-
-include("NLMPCC.jl")
-
-export NLMPCC
 
 include("MPCCState.jl")
 
