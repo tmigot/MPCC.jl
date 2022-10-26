@@ -15,7 +15,7 @@ state = MPCCAtX(zeros(10), zeros(0), cGx = [0.0], cHx = [1.0])
 # On vérifie que la fonction update! fonctionne
 update!(state, x = ones(10), fx = 1.0, gx = ones(10))
 update!(state, lambda = ones(10), current_time = 1.0)
-update!(state, Hx = ones(10,10), mu = ones(10), cx = ones(10), Jx = ones(10,10))
+update!(state, Hx = ones(10, 10), mu = ones(10), cx = ones(10), Jx = ones(10, 10))
 
 @test (false in (state.x .== 1.0)) == false #assez bizarre comme test...
 @test state.fx == 1.0

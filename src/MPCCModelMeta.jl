@@ -9,7 +9,7 @@
 #####################################################################################
 
 # Base type for metadata related to an optimization model.
-abstract type AbstractMPCCModelMeta{T, S} end
+abstract type AbstractMPCCModelMeta{T,S} end
 
 """
 A composite type that represents the main features of the optimization problem
@@ -28,31 +28,33 @@ A composite type that represents the main features of the optimization problem
  components may be infinite to indicate that the corresponding
  bound or general constraint is not present.
 """
-struct MPCCModelMeta{T, S} <: AbstractMPCCModelMeta{T, S}
+struct MPCCModelMeta{T,S} <: AbstractMPCCModelMeta{T,S}
 
-  ncc   :: Int               # number of complementarity constraints
-  yG   :: S    # initial Lagrange multipliers
-  yH   :: S    # initial Lagrange multipliers
-  lccG  :: S    # vector of constraint lower bounds of the complementarity constraint
-  lccH  :: S    # vector of constraint upper bounds of the complementarity constraint
-  nnzjG
-  nnzjH
+    ncc::Int               # number of complementarity constraints
+    yG::S    # initial Lagrange multipliers
+    yH::S    # initial Lagrange multipliers
+    lccG::S    # vector of constraint lower bounds of the complementarity constraint
+    lccH::S    # vector of constraint upper bounds of the complementarity constraint
+    nnzjG::Any
+    nnzjH::Any
 end
 
-function  MPCCModelMeta{T, S}(nvar, ncc;
-  yG::S = fill!(S(undef, ncc), zero(T)),
-  yH::S = fill!(S(undef, ncc), zero(T)),
-  lccG::S = fill!(S(undef, ncc), T(-Inf)),
-  lccH::S = fill!(S(undef, ncc), T(Inf)),
-  nnzjG = ncc * nvar,
-  nnzjH = ncc * nvar,
-  ) where {T, S}
-  @lencheck ncc lccG lccH yG yH
-  MPCCModelMeta{T, S}(ncc, yG, yH, lccG, lccH, nnzjG, nnzjH)
+function MPCCModelMeta{T,S}(
+    nvar,
+    ncc;
+    yG::S = fill!(S(undef, ncc), zero(T)),
+    yH::S = fill!(S(undef, ncc), zero(T)),
+    lccG::S = fill!(S(undef, ncc), T(-Inf)),
+    lccH::S = fill!(S(undef, ncc), T(Inf)),
+    nnzjG = ncc * nvar,
+    nnzjH = ncc * nvar,
+) where {T,S}
+    @lencheck ncc lccG lccH yG yH
+    MPCCModelMeta{T,S}(ncc, yG, yH, lccG, lccH, nnzjG, nnzjH)
 end
 
 MPCCModelMeta(nvar, ncc; yG::S = zeros(ncc), kwargs...) where {S} =
-  MPCCModelMeta{eltype(S), S}(nvar, ncc, yG = yG; kwargs...)
+    MPCCModelMeta{eltype(S),S}(nvar, ncc, yG = yG; kwargs...)
 
 """
     complementarity_constrained(nlp)
@@ -62,4 +64,5 @@ Returns whether the problem's constraints are all inequalities.
 Unconstrained problems return true.
 """
 complementarity_constrained(meta::MPCCModelMeta) = meta.ncc > 0
-complementarity_constrained(nlp::AbstractMPCCModel) = complementarity_constrained(nlp.cc_meta)
+complementarity_constrained(nlp::AbstractMPCCModel) =
+    complementarity_constrained(nlp.cc_meta)

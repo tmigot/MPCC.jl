@@ -3,13 +3,16 @@ using MPCC
 
 makedocs(
     sitename = "MPCC.jl",
-    format = Documenter.HTML(assets = ["assets/style.css"], prettyurls = get(ENV, "CI", nothing) == "true"),
+    format = Documenter.HTML(
+        assets = ["assets/style.css"],
+        prettyurls = get(ENV, "CI", nothing) == "true",
+    ),
     modules = [MPCC],
     pages = [
-             "Home" => "index.md",
-             "API" => "api.md",
-             "Examples and tutorials" => "tutorial.md",
-            ]
+        "Home" => "index.md",
+        "API" => "api.md",
+        "Examples and tutorials" => "tutorial.md",
+    ],
 )
 
 # Documenter can also automatically deploy documentation to gh-pages.
