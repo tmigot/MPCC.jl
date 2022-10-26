@@ -32,15 +32,23 @@ test_max_cntrs = _init_max_counters_mpcc(obj = 2)
 stop_nlp_cntrs = MPCCStopping(mpcc, max_cntrs = test_max_cntrs)
 @test stop_nlp_cntrs.meta.max_cntrs[:neval_obj] == 2
 @test stop_nlp_cntrs.meta.max_cntrs[:neval_grad] == 40000
-@test stop_nlp_cntrs.meta.max_cntrs[:neval_sum] == 40000*11
+@test stop_nlp_cntrs.meta.max_cntrs[:neval_sum] == 40000 * 11
 
 x0 = ones(6)
 c(x) = [sum(x)]
-meta = NLPModelMeta(6, x0=x0, lvar = fill(-10.0,size(x0)), uvar = fill(10.0,size(x0)),
-                    ncon = 1, y0 = [0.0], lcon = [-Inf], ucon = [6.])
-mp2 = ADNLPModel(meta, Counters(), rosenbrock,  c)
+meta = NLPModelMeta(
+    6,
+    x0 = x0,
+    lvar = fill(-10.0, size(x0)),
+    uvar = fill(10.0, size(x0)),
+    ncon = 1,
+    y0 = [0.0],
+    lcon = [-Inf],
+    ucon = [6.0],
+)
+mp2 = ADNLPModel(meta, Counters(), rosenbrock, c)
 nlp2 = MPCCNLPs(mp2)
-nlp_at_x_c = MPCCAtX(x0, NaN*ones(nlp2.meta.ncon))
+nlp_at_x_c = MPCCAtX(x0, NaN * ones(nlp2.meta.ncon))
 stop_nlp_c = MPCCStopping(nlp2, nlp_at_x_c, optimality_check = SStat)
 
 a = zeros(6)
@@ -64,8 +72,12 @@ fill_in!(stop_nlp_default, sol)
 @test stop!(stop_nlp_default) == true
 
 #Keywords in the stop! call
-nlp_at_x_kargs = MPCCAtX(x0, NaN*ones(nlp2.meta.ncon))
-stop_nlp_kargs = MPCCStopping(nlp2, nlp_at_x_c, optimality_check = (x,y; test = 1.0, kwargs...) -> MStat(x,y; kwargs...) + test)
+nlp_at_x_kargs = MPCCAtX(x0, NaN * ones(nlp2.meta.ncon))
+stop_nlp_kargs = MPCCStopping(
+    nlp2,
+    nlp_at_x_c,
+    optimality_check = (x, y; test = 1.0, kwargs...) -> MStat(x, y; kwargs...) + test,
+)
 fill_in!(stop_nlp_kargs, sol)
 @test stop!(stop_nlp_kargs) == false
 @test stop!(stop_nlp_kargs, test = 0.0) == true
@@ -95,7 +107,7 @@ stop!(stop_s)
 
 a = MPCC.neval_obj(stop_s.pb)
 decrement!(stop_s.pb, :neval_obj)
-@test MPCC.neval_obj(stop_s.pb) == a-1
+@test MPCC.neval_obj(stop_s.pb) == a - 1
 reset!(stop_s.pb)
 @test neval_consG(stop_s.pb) == 0
 
