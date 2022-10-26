@@ -10,6 +10,11 @@ using NLPModels
 include("problems.jl")
 include("rosenbrock.jl")
 
+using Stopping
+printstyled("MPCCStopping tests... ")
+include("test-mpcc-stopping.jl")
+printstyled("passed ✓ \n", color = :green)
+
 @testset "MPCCMeta tests" begin
     test_meta = MPCCModelMeta(6, 0)
 
@@ -203,8 +208,6 @@ end
     @test viol(nlp, t0) == [0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0]
 end
 
-using Stopping
-
 @testset "MPCCAtX tests" begin
     state = MPCCAtX(zeros(10), zeros(0), cGx = [0.0], cHx = [1.0])
 
@@ -249,8 +252,5 @@ include("run_test_bpmpcc.jl")
 printstyled("passed ✓ \n", color = :green)
 printstyled("Ampl MPCC tests... ")
 include("run_test_mpccampl.jl")
-printstyled("passed ✓ \n", color = :green)
-printstyled("MPCCStopping tests... ")
-include("test-mpcc-stopping.jl")
 printstyled("passed ✓ \n", color = :green)
 =#

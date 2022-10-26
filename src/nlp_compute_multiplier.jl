@@ -4,13 +4,13 @@ _compute_mutliplier: Additional function to estimate Lagrange multiplier of the 
 """
 function _compute_mutliplier(
     pb::AbstractNLPModel,
-    x::Iterate,
-    gx::Iterate,
-    cx::Iterate,
+    x::T,
+    gx::T,
+    cx::T,
     Jx::AbstractMatrix;
     active_prec_c::Float64 = 1e-6,
     active_prec_b::Float64 = 1e-6,
-)
+) where {T}
 
     n = length(x)
     nc = cx == nothing ? 0 : length(cx)

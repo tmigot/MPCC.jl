@@ -3,11 +3,17 @@ A = rand(5, 5);
 Q = A' * A
 
 f(x) = x' * Q * x
-nlp = ADNLPModel(f, zeros(5))
-mpcc = MPCCNLPs(nlp)
+x0 = zeros(5)
+G(x) = [x[1]]
+H(x) = [x[2]]
+lccg, lcch = zeros(1), zeros(1)
+lvar, uvar = fill(-10.0, size(x0)), fill(10.0, size(x0))
+c = x -> [x[1]]
+lcon, ucon = zeros(1), zeros(1)
+mpcc = ADMPCCModel(G, H, lccg, lcch, f, x0, c, lcon, ucon, lvar = lvar, uvar = uvar)
+    
 nlp_at_x = MPCCAtX(zeros(5), zeros(0))
 stop_nlp = MPCCStopping(mpcc, nlp_at_x, optimality0 = 0.0, optimality_check = SStat)
-
 
 a = zeros(5)
 fill_in!(stop_nlp, a)
@@ -24,7 +30,7 @@ fill_in!(stop_nlp, a)
 
 reinit!(stop_nlp, rstate = true, x = ones(5))
 @test stop_nlp.current_state.x == ones(5)
-@test stop_nlp.current_state.fx == nothing
+@test isnan(stop_nlp.current_state.fx)
 @test stop_nlp.meta.nb_of_stop == 0
 
 #We know test how to initialize the counter:
@@ -36,18 +42,10 @@ stop_nlp_cntrs = MPCCStopping(mpcc, max_cntrs = test_max_cntrs)
 
 x0 = ones(6)
 c(x) = [sum(x)]
-meta = NLPModelMeta(
-    6,
-    x0 = x0,
-    lvar = fill(-10.0, size(x0)),
-    uvar = fill(10.0, size(x0)),
-    ncon = 1,
-    y0 = [0.0],
-    lcon = [-Inf],
-    ucon = [6.0],
-)
-mp2 = ADNLPModel(meta, Counters(), rosenbrock, c)
-nlp2 = MPCCNLPs(mp2)
+lcon = [-Inf],
+ucon = [6.0],
+mpcc = ADMPCCModel(G, H, lccg, lcch, rosenbrock, x0, c, lcon, ucon, lvar = lvar, uvar = uvar)
+
 nlp_at_x_c = MPCCAtX(x0, NaN * ones(nlp2.meta.ncon))
 stop_nlp_c = MPCCStopping(nlp2, nlp_at_x_c, optimality_check = SStat)
 
@@ -122,12 +120,3 @@ update_and_stop!(stop_m, lambda = [0.75, 0.25], lambdaG = [-2.0], lambdaH = [0.0
 fill_in!(stop_c, ones(3))
 stop!(stop_c)
 @test status(stop_c) == :Unknown
-
-#Unconstrained MPCC:
-test_unc = MPCCNLPs(ADNLPModel(rosenbrock, zeros(6)))
-stop_unc = MPCCStopping(test_unc, MPCCAtX(zeros(6), zeros(0)), optimality_check = MStat)
-fill_in!(stop_unc, ones(6))
-@test stop_unc.current_state.lambda == zeros(0)
-@test stop_unc.current_state.lambdaG == nothing
-@test stop_unc.current_state.lambdaH == nothing
-@test stop_unc.current_state.mu == nothing
