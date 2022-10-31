@@ -32,10 +32,26 @@ function MPCCNLPs(
         nnzjG = G.meta.nnzj,
         nnzjH = H.meta.nnzj,
     )
+    meta = NLPModelMeta(
+        nvar;
+        x0 = mp.meta.x0,
+        lvar = mp.meta.lvar,
+        uvar = mp.meta.uvar ,
+        ncon = mp.meta.ncon,
+        y0 = mp.meta.y0,
+        lcon = mp.meta.lcon,
+        ucon = mp.meta.ucon,
+        nnzj = mp.meta.nnzj,
+        lin_nnzj = mp.meta.lin_nnzj,
+        nln_nnzj = mp.meta.nln_nnzj,
+        nnzh = nvar * (nvar + 1) / 2, # mp.meta.nnzh + G.meta.nnzh + H.meta.nnzh
+        lin = mp.meta.lin,
+        minimize = mp.meta.minimize,
+        islp = mp.meta.islp,
+        name = mp.meta.name,
+      )
 
-    nnzh = mp.meta.nnzh + G.meta.nnzh + H.meta.nnzh
-
-    return MPCCNLPs(mp, G, H, mp.meta, cc_meta, Counters(), MPCCCounters())
+    return MPCCNLPs(mp, G, H, meta, cc_meta, Counters(), MPCCCounters())
 end
 
 for meth in (:obj, :grad!, :objgrad!, :objcons!, :jac_op!, :ghjvprod!, :jth_hprod!)

@@ -181,6 +181,18 @@ include("NLMPCC.jl")
 
 export NLMPCC
 
+using Stopping
+
+import Stopping: reinit!, update!, _init_field
+
+include("MPCCState.jl")
+
+export MPCCAtX
+
+include("MPCCStopping.jl")
+
+export MPCCStopping, _init_max_counters_mpcc, SStat, MStat, CStat, WStat
+
 #=
 include("BPMPCC.jl")
 
@@ -189,16 +201,5 @@ export BPMPCCModel
 include("MPCCAmpl.jl")
 
 export MPCCAmpl
-
-include("MPCCState.jl")
-
-export MPCCAtX, update!, reinit!
-
-include("MPCCStopping.jl")
-
-export MPCCStopping, _init_max_counters_mpcc, fill_in!, _resources_check!,
-       _unbounded_problem_check!, _optimality_check,
-       start!, stop!, update_and_start!, update_and_stop!, reinit!, status,
-       SStat, MStat, CStat, WStat
 =#
 end #end of module

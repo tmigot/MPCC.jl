@@ -1,10 +1,3 @@
-using Stopping
-
-import Stopping: reinit!, update!
-
-const Iterate = Union{Number,Vector,Nothing}
-const FloatVoid = Union{Number,Nothing}
-const MatrixType = Union{Number,AbstractArray,AbstractMatrix,Nothing}
 """
 Type: MPCCAtX
 Methods: update!, reinit!
@@ -35,61 +28,59 @@ Note: * by default, unknown entries are set to nothing (except evals).
       * x and lambda are mandatory entries. If no constraints lambda = [].
       * The constructor check the size of the entries.
 """
-mutable struct MPCCAtX{T<:AbstractVector} <: AbstractState
+mutable struct MPCCAtX{Score, S, T <: AbstractVector} <: AbstractState{S, T}
 
     #Unconstrained State
     x::T     # current point
-    fx::Union{eltype(T),Nothing}   # objective function
-    gx::Union{T,eltype(T),Nothing}     # gradient size: x
-    Hx::MatrixType  # hessian size: |x| x |x|
+    fx::S   # objective function
+    gx::T    # gradient size: x
+    Hx # hessian size: |x| x |x|
 
     #Bounds State
-    mu::Union{T,eltype(T),Nothing}     # Lagrange multipliers with bounds size of |x|
+    mu::T    # Lagrange multipliers with bounds size of |x|
 
     #Constrained State
-    cx::Union{T,eltype(T),Nothing}     # vector of constraints lc <= c(x) <= uc
-    Jx::MatrixType  # jacobian matrix, size: |lambda| x |x|
+    cx::T    # vector of constraints lc <= c(x) <= uc
+    Jx  # jacobian matrix, size: |lambda| x |x|
     lambda::T    # Lagrange multipliers
 
     #Complementarity State
-    cGx::Union{T,eltype(T),Nothing}     # vector of constraints lG <= G(x) <= uG
-    JGx::MatrixType  # jacobian matrix, size: |ncc| x |x|
-    lambdaG::Union{T,eltype(T),Nothing}    # Lagrange multipliers
-    cHx::Union{T,eltype(T),Nothing}     # vector of constraints lH <= H(x) <= uH
-    JHx::MatrixType  # jacobian matrix, size: |ncc| x |x|
-    lambdaH::Union{T,eltype(T),Nothing}    # Lagrange multipliers
+    cGx::T    # vector of constraints lG <= G(x) <= uG
+    JGx  # jacobian matrix, size: |ncc| x |x|
+    lambdaG::T   # Lagrange multipliers
+    cHx::T    # vector of constraints lH <= H(x) <= uH
+    JHx  # jacobian matrix, size: |ncc| x |x|
+    lambdaH::T   # Lagrange multipliers
 
-    d::Union{T,eltype(T),Nothing} #search direction
-    res::Union{T,eltype(T),Nothing} #residual
+    d::T#search direction
+    res::T#residual
 
     #Resources State
-    current_time::Union{eltype(T),Nothing}
-    current_score::Union{T,eltype(T),Nothing}
-    evals::MPCCCounters
+    current_time::Float64
+    current_score::Score
 
     function MPCCAtX(
         x::T,
-        lambda::T;
-        fx::FloatVoid = nothing,
-        gx::Iterate = nothing,
-        Hx::MatrixType = nothing,
-        mu::Iterate = nothing,
-        cx::Iterate = nothing,
-        Jx::MatrixType = nothing,
-        lambdaG::Iterate = nothing,
-        lambdaH::Iterate = nothing,
-        cGx::Iterate = nothing,
-        JGx::MatrixType = nothing,
-        cHx::Iterate = nothing,
-        JHx::MatrixType = nothing,
-        d::Iterate = nothing,
-        res::Iterate = nothing,
-        current_time::FloatVoid = nothing,
-        current_score::Iterate = nothing,
-        evals::MPCCCounters = MPCCCounters(),
-    ) where {T<:AbstractVector}
+        lambda::T,
+        current_score::Score = _init_field(eltype(T));
+        fx::eltype(T) = _init_field(eltype(T)),
+        gx::T = _init_field(T),
+        Hx = _init_field(Matrix{eltype(T)}),
+        mu::T = _init_field(T),
+        cx::T = _init_field(T),
+        Jx = _init_field(SparseMatrixCSC{eltype(T), Int64}),
+        lambdaG::T = _init_field(T),
+        lambdaH::T = _init_field(T),
+        cGx::T = _init_field(T),
+        JGx = _init_field(SparseMatrixCSC{eltype(T), Int64}),
+        cHx::T = _init_field(T),
+        JHx = _init_field(SparseMatrixCSC{eltype(T), Int64}),
+        d::T = _init_field(T),
+        res::T = _init_field(T),
+        current_time::Float64 = NaN,
+    ) where {Score, T <: AbstractVector}
 
-        return new{T}(
+        return new{Score, eltype(T), T}(
             x,
             fx,
             gx,
@@ -108,34 +99,125 @@ mutable struct MPCCAtX{T<:AbstractVector} <: AbstractState
             res,
             current_time,
             current_score,
-            evals,
         )
     end
 end
 
-"""
-reinit!: function that set all the entries at void except the mandatory x
-
-Warning: if x, lambda or evals are given as a keyword argument they will be
-prioritized over the existing x, lambda and the default Counters.
-"""
 function reinit!(stateatx::MPCCAtX, x::Vector, l::Vector; kwargs...)
 
     for k ∈ fieldnames(MPCCAtX)
-        if !(k ∈ [:x, :lambda, :evals])
-            setfield!(stateatx, k, nothing)
+        if !(k ∈ [:x, :lambda])
+            setfield!(stateatx, k, _init_field(typeof(getfield(stateatx, k))))
         end
     end
 
-    return update!(stateatx; x = x, lambda = l, evals = MPCCCounters(), kwargs...)
+    setfield!(stateatx, :x, x)
+    setfield!(stateatx, :lambda, l)
+  
+    if length(kwargs) == 0
+      return stateatx #save the update! call if no other kwargs than x
+    end
+  
+    return update!(stateatx; kwargs...)
 end
 
-"""
-reinit!: short version of reinit! reusing the x in the state
-
-Warning: if x, lambda or evals are given as a keyword argument they will be
-prioritized over the existing x, lambda and the default Counters.
-"""
 function reinit!(stateatx::MPCCAtX; kwargs...)
     return reinit!(stateatx, stateatx.x, stateatx.lambda; kwargs...)
+end
+
+for field in fieldnames(MPCCAtX)
+  meth = Symbol("get_", field)
+  @eval begin
+    @doc """
+        $($meth)(state)
+    Return the value $($(QuoteNode(field))) from the state.
+    """
+    $meth(state::MPCCAtX) = getproperty(state, $(QuoteNode(field)))
+  end
+  @eval export $meth
+end
+
+function set_current_score!(state::MPCCAtX{Score, S, T}, current_score::Score) where {Score, S, T}
+  if length(state.current_score) == length(current_score)
+    state.current_score .= current_score
+  else
+    state.current_score = current_score
+  end
+  return state
+end
+
+function Stopping.set_current_score!(
+  state::MPCCAtX{Score, S, T},
+  current_score::Score,
+) where {Score <: Number, S, T}
+  state.current_score = current_score
+  return state
+end
+
+function set_x!(state::MPCCAtX{Score, S, T}, x::T) where {Score, S, T}
+  if length(state.x) == length(x)
+    state.x .= x
+  else
+    state.x = x
+  end
+  return state
+end
+
+function set_d!(state::MPCCAtX{Score, S, T}, d::T) where {Score, S, T}
+  if length(state.d) == length(d)
+    state.d .= d
+  else
+    state.d = d
+  end
+  return state
+end
+
+function set_res!(state::MPCCAtX{Score, S, T}, res::T) where {Score, S, T}
+  if length(state.res) == length(res)
+    state.res .= res
+  else
+    state.res = res
+  end
+  return state
+end
+
+function set_lambda!(state::MPCCAtX{Score, S, T}, lambda::T) where {Score, S, T}
+  if length(state.lambda) == length(lambda)
+    state.lambda .= lambda
+  else
+    state.lambda = lambda
+  end
+  return state
+end
+
+function set_mu!(state::MPCCAtX{Score, S, T}, mu::T) where {Score, S, T}
+  if length(state.mu) == length(mu)
+    state.mu .= mu
+  else
+    state.mu = mu
+  end
+  return state
+end
+
+function set_fx!(state::MPCCAtX{Score, S, T}, fx::S) where {Score, S, T}
+  state.fx = fx
+  return state
+end
+
+function set_gx!(state::MPCCAtX{Score, S, T}, gx::T) where {Score, S, T}
+  if length(state.gx) == length(gx)
+    state.gx .= gx
+  else
+    state.gx = gx
+  end
+  return state
+end
+
+function set_cx!(state::MPCCAtX{Score, S, T}, cx::T) where {Score, S, T}
+  if length(state.cx) == length(cx)
+    state.cx .= cx
+  else
+    state.cx = cx
+  end
+  return state
 end
