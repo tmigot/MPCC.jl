@@ -1,6 +1,6 @@
 @testset "MPCCStopping tests I" begin
     # We create a simple function to test
-    A = rand(5, 5);
+    A = rand(5, 5)
     Q = A' * A
 
     f(x) = x' * Q * x
@@ -12,7 +12,7 @@
     c = x -> [x[1]]
     lcon, ucon = zeros(1), zeros(1)
     mpcc = ADMPCCModel(G, H, lccg, lcch, f, x0, c, lcon, ucon, lvar = lvar, uvar = uvar)
-        
+
     nlp_at_x = MPCCAtX(zeros(5), zeros(0))
     stop_nlp = MPCCStopping(mpcc, nlp_at_x, optimality0 = 0.0, optimality_check = SStat)
 
@@ -52,7 +52,19 @@ end
     G(x) = [x[1] - 1]
     H(x) = [x[2] - 1]
     lccg, lcch = zeros(1), zeros(1)
-    mpcc = ADMPCCModel(G, H, lccg, lcch, rosenbrock, x0, c, lcon, ucon, lvar = lvar, uvar = uvar)
+    mpcc = ADMPCCModel(
+        G,
+        H,
+        lccg,
+        lcch,
+        rosenbrock,
+        x0,
+        c,
+        lcon,
+        ucon,
+        lvar = lvar,
+        uvar = uvar,
+    )
 
     nlp_at_x_c = MPCCAtX(x0, NaN * ones(mpcc.meta.ncon))
     stop_nlp_c = MPCCStopping(mpcc, nlp_at_x_c, optimality_check = SStat)
@@ -82,7 +94,8 @@ end
     stop_nlp_kargs = MPCCStopping(
         mpcc,
         nlp_at_x_c,
-        optimality_check = (x, y; test = 1.0, kwargs...) -> MStat(x, y; kwargs...) + test,
+        optimality_check = (x, y; test = 1.0, kwargs...) ->
+            MStat(x, y; kwargs...) + test,
     )
     fill_in!(stop_nlp_kargs, sol)
     @test stop!(stop_nlp_kargs) == false
@@ -92,8 +105,10 @@ end
 @testset "MPCCStopping tests III" begin
     test1 = ex1()
     x0 = test1.meta.x0
-    stop_w = MPCCStopping(test1, MPCCAtX(x0, zeros(test1.meta.ncon)), optimality_check = WStat)
-    stop_s = MPCCStopping(test1, MPCCAtX(x0, zeros(test1.meta.ncon)), optimality_check = SStat)
+    stop_w =
+        MPCCStopping(test1, MPCCAtX(x0, zeros(test1.meta.ncon)), optimality_check = WStat)
+    stop_s =
+        MPCCStopping(test1, MPCCAtX(x0, zeros(test1.meta.ncon)), optimality_check = SStat)
     Wpoint, Spoint = zeros(2), [0.0, 1.0]
     fill_in!(stop_w, Wpoint)
     @test stop_w.current_state.lambdaG == [1.0]
