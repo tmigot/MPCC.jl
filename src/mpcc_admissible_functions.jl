@@ -4,13 +4,13 @@ length(lambda) > 0
 """
 function _grad_lagrangian(pb::AbstractMPCCModel, state::MPCCAtX)
 
-    if (pb.meta.ncon + pb.meta.ncc) == 0 & !has_bounds(pb)
+    if (pb.meta.ncon + pb.cc_meta.ncc) == 0 & !has_bounds(pb)
         return state.gx
-    elseif (pb.meta.ncon + pb.meta.ncc) == 0
+    elseif (pb.meta.ncon + pb.cc_meta.ncc) == 0
         return state.gx + state.mu
-    elseif pb.meta.ncc == 0
+    elseif pb.cc_meta.ncc == 0
         return state.gx + state.mu + state.Jx' * state.lambda
-    else #pb.meta.ncon + pb.meta.ncc > 0
+    else #pb.meta.ncon + pb.cc_meta.ncc > 0
         return state.gx + state.mu + state.Jx' * state.lambda - state.JGx' * state.lambdaG -
                state.JHx' * state.lambdaH
     end
@@ -39,12 +39,12 @@ function _sign_multipliers_nonlin(pb::AbstractMPCCModel, state::MPCCAtX)
 end
 
 function _sign_multipliers_comp(pb::AbstractMPCCModel, state::MPCCAtX)
-    if pb.meta.ncc == 0
+    if pb.cc_meta.ncc == 0
         return zeros(0)
     else
         return vcat(
-            min.(abs.(state.lambdaG), abs.(state.cGx - pb.meta.lccG)),
-            min.(abs.(state.lambdaH), abs.(state.cHx - pb.meta.lccH)),
+            min.(abs.(state.lambdaG), abs.(state.cGx - pb.cc_meta.lccG)),
+            min.(abs.(state.lambdaH), abs.(state.cHx - pb.cc_meta.lccH)),
         )
     end
 end
@@ -75,23 +75,23 @@ function _sign_multipliers_comp_Cstat(pb::AbstractMPCCModel, state::MPCCAtX)
 end
 
 function _feasibility(pb::AbstractMPCCModel, state::MPCCAtX)
-    if (pb.meta.ncon + pb.meta.ncc) == 0
+    if (pb.meta.ncon + pb.cc_meta.ncc) == 0
         return vcat(max.(state.x - pb.meta.uvar, 0.0), max.(-state.x + pb.meta.lvar, 0.0))
-    elseif pb.meta.ncc == 0
+    elseif pb.cc_meta.ncc == 0
         return vcat(
             max.(state.cx - pb.meta.ucon, 0.0),
             max.(-state.cx + pb.meta.lcon, 0.0),
             max.(state.x - pb.meta.uvar, 0.0),
             max.(-state.x + pb.meta.lvar, 0.0),
         )
-    else #pb.meta.ncon + pb.meta.ncc > 0
+    else #pb.meta.ncon + pb.cc_meta.ncc > 0
         return vcat(
             max.(state.cx - pb.meta.ucon, 0.0),
             max.(-state.cx + pb.meta.lcon, 0.0),
             max.(state.x - pb.meta.uvar, 0.0),
             max.(-state.x + pb.meta.lvar, 0.0),
-            max.(-state.cGx + pb.meta.lccG, 0.0),
-            max.(-state.cHx + pb.meta.lccH, 0.0),
+            max.(-state.cGx + pb.cc_meta.lccG, 0.0),
+            max.(-state.cHx + pb.cc_meta.lccH, 0.0),
             min.(state.cGx, state.cHx),
         )
     end
@@ -147,7 +147,7 @@ function SStat(
 
     res = WStat(pb, state, pnorm = pnorm; kwargs...)
     sign =
-        pb.meta.ncc > 0 ? norm(_sign_multipliers_comp_Sstat(pb, state, actif), pnorm) : 0.0
+        pb.cc_meta.ncc > 0 ? norm(_sign_multipliers_comp_Sstat(pb, state, actif), pnorm) : 0.0
 
     return max(res, sign)
 end
@@ -172,7 +172,7 @@ required: state.gx
 function MStat(pb::AbstractMPCCModel, state::MPCCAtX; pnorm::Float64 = Inf, kwargs...)
 
     res = WStat(pb, state, pnorm = pnorm; kwargs...)
-    sign = pb.meta.ncc > 0 ? norm(_sign_multipliers_comp_Mstat(pb, state), pnorm) : 0.0
+    sign = pb.cc_meta.ncc > 0 ? norm(_sign_multipliers_comp_Mstat(pb, state), pnorm) : 0.0
 
     return max(res, sign)
 end
@@ -194,7 +194,7 @@ required: state.gx
 function CStat(pb::AbstractMPCCModel, state::MPCCAtX; pnorm::Float64 = Inf, kwargs...)
 
     res = WStat(pb, state, pnorm = pnorm; kwargs...)
-    sign = pb.meta.ncc > 0 ? norm(_sign_multipliers_comp_Cstat(pb, state), pnorm) : 0.0
+    sign = pb.cc_meta.ncc > 0 ? norm(_sign_multipliers_comp_Cstat(pb, state), pnorm) : 0.0
 
     return max(res, sign)
 end

@@ -37,7 +37,7 @@ for counter in fieldnames(MPCCCounters)
             $($counter)(nlp)
         Get the number of `$(split("$($counter)", "_")[2])` evaluations.
         """
-        $counter(nlp::AbstractMPCCModel) = nlp.counters.$counter
+        $counter(nlp::AbstractMPCCModel) = nlp.cc_counters.$counter
         export $counter
     end
 end
@@ -46,7 +46,7 @@ end
     increment!(nlp, s)
 Increment counter `s` of problem `nlp`.
 """
-function increment!(nlp::AbstractMPCCModel, s::Symbol)
+function NLPModels.increment!(nlp::AbstractMPCCModel, s::Symbol)
     if s in fieldnames(MPCCCounters)
         setfield!(nlp.cc_counters, s, getfield(nlp.cc_counters, s) + 1)
     else
@@ -58,7 +58,7 @@ end
     decrement!(nlp, s)
 Increment counter `s` of problem `nlp`.
 """
-function decrement!(nlp::AbstractMPCCModel, s::Symbol)
+function NLPModels.decrement!(nlp::AbstractMPCCModel, s::Symbol)
     if s in fieldnames(MPCCCounters)
         setfield!(nlp.cc_counters, s, getfield(nlp.cc_counters, s) - 1)
     else
@@ -70,7 +70,7 @@ end
     reset!(counters)
 Reset evaluation counters
 """
-function reset!(counters::MPCCCounters)
+function NLPModels.reset!(counters::MPCCCounters)
     for f in fieldnames(MPCCCounters)
         setfield!(counters, f, 0)
     end
@@ -81,7 +81,7 @@ end
     reset!(nlp)
 Reset evaluation count in `nlp`
 """
-function reset!(nlp::AbstractMPCCModel)
+function NLPModels.reset!(nlp::AbstractMPCCModel)
     reset!(nlp.cc_counters)
     return nlp
 end

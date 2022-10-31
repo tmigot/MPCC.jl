@@ -1,19 +1,14 @@
-using LinearAlgebra, LinearOperators, SparseArrays, Printf, Test
-
-using ADNLPModels
+# This package
 using MPCC
-
-using JuMP
-using NLPModelsJuMP
-using NLPModels
+#stdlib
+using LinearAlgebra, SparseArrays, Printf, Test
+# JSO
+using ADNLPModels, JuMP, LinearOperators, NLPModels,  NLPModelsJuMP
+# Stopping
+using Stopping
 
 include("problems.jl")
 include("rosenbrock.jl")
-
-using Stopping
-printstyled("MPCCStopping tests... ")
-include("test-mpcc-stopping.jl")
-printstyled("passed ✓ \n", color = :green)
 
 @testset "MPCCMeta tests" begin
     test_meta = MPCCModelMeta(6, 0)
@@ -244,6 +239,10 @@ end
     @test state.x == zeros(10)
     @test isnan(state.fx)
 
+end
+
+@testset "MPCCStopping tests" begin
+    include("test-mpcc-stopping.jl")
 end
 
 #=

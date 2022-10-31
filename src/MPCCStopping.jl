@@ -164,7 +164,7 @@ function _init_max_counters_mpcc(;
 end
 
 function Stopping.fill_in!(
-    stp::MPCCStopping{Pb, M, SRC, NLPAtX{Score, S, T}, MStp, LoS},
+    stp::MPCCStopping,
     x::T;
     fx::Union{eltype(T), Nothing} = nothing,
     gx::Union{T, Nothing} = nothing,
@@ -182,7 +182,7 @@ function Stopping.fill_in!(
     matrix_info::Bool = true,
     convert::Bool = true,
     kwargs...,
-) where {Pb, M, SRC, MStp, LoS, Score, S, T}
+) where {T<:AbstractVector}
     gfx = isnothing(fx) ? obj(stp.pb, x) : fx
     ggx = isnothing(gx) ? grad(stp.pb, x) : gx
 
@@ -221,7 +221,7 @@ function Stopping.fill_in!(
     end
 
     gcGx, gcHx, gJGx, gJHx = cGx, cHx, JGx, JHx
-    if stp.pb.meta.ncc > 0
+    if stp.pb.cc_meta.ncc > 0
         gcGx = isnothing(cGx) ? consG(stp.pb, x) : cGx
         gcHx = isnothing(cHx) ? consH(stp.pb, x) : cHx
         gJGx = isnothing(JGx) ? jacG(stp.pb, x) : JGx
@@ -229,8 +229,8 @@ function Stopping.fill_in!(
     end
 
     #update the Lagrange multiplier if one of the 2 is asked
-    #if (stp.pb.meta.ncc > 0 && stp.pb.meta.ncon > 0 && has_bounds(stp.pb)) && (lambdaG == nothing || lambdaH == nothing ||lambda == nothing || mu == nothing)
-    if (stp.pb.meta.ncc > 0) &&
+    #if (stp.pb.cc_meta.ncc > 0 && stp.pb.meta.ncon > 0 && has_bounds(stp.pb)) && (lambdaG == nothing || lambdaH == nothing ||lambda == nothing || mu == nothing)
+    if (stp.pb.cc_meta.ncc > 0) &&
        (lambdaG == nothing || lambdaH == nothing || lambda == nothing || mu == nothing)
         lb, lc, lG, lH =
             _compute_mutliplier(stp.pb, x, ggx, gcx, gJx, gcGx, gJGx, gcHx, gJHx, kwargs...)

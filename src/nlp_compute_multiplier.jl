@@ -57,7 +57,7 @@ function _compute_mutliplier(
     active_prec_b::Float64 = 1e-6,
 )
 
-    n, ncc = length(x), pb.meta.ncc
+    n, ncc = length(x), pb.cc_meta.ncc
     nc = cx == nothing ? 0 : length(cx)
 
     #active res_bounds
