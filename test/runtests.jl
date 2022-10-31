@@ -3,7 +3,7 @@ using MPCC
 #stdlib
 using LinearAlgebra, SparseArrays, Printf, Test
 # JSO
-using ADNLPModels, JuMP, LinearOperators, NLPModels,  NLPModelsJuMP
+using ADNLPModels, JuMP, LinearOperators, NLPModels, NLPModelsJuMP
 # Stopping
 using Stopping
 

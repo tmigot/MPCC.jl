@@ -36,7 +36,7 @@ function MPCCNLPs(
         nvar;
         x0 = mp.meta.x0,
         lvar = mp.meta.lvar,
-        uvar = mp.meta.uvar ,
+        uvar = mp.meta.uvar,
         ncon = mp.meta.ncon,
         y0 = mp.meta.y0,
         lcon = mp.meta.lcon,
@@ -49,7 +49,7 @@ function MPCCNLPs(
         minimize = mp.meta.minimize,
         islp = mp.meta.islp,
         name = mp.meta.name,
-      )
+    )
 
     return MPCCNLPs(mp, G, H, meta, cc_meta, Counters(), MPCCCounters())
 end

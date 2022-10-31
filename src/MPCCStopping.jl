@@ -30,7 +30,7 @@ Stopping structure for non-linear programming problems using NLPModels.
  Warning:
  * optimality_check does not necessarily fill in the State.
  """
-mutable struct MPCCStopping{Pb, M, SRC, T, MStp, LoS} <: AbstractStopping{Pb, M, SRC, T, MStp, LoS}
+mutable struct MPCCStopping{Pb,M,SRC,T,MStp,LoS} <: AbstractStopping{Pb,M,SRC,T,MStp,LoS}
 
     # problem
     pb::Pb
@@ -166,18 +166,18 @@ end
 function Stopping.fill_in!(
     stp::MPCCStopping,
     x::T;
-    fx::Union{eltype(T), Nothing} = nothing,
-    gx::Union{T, Nothing} = nothing,
+    fx::Union{eltype(T),Nothing} = nothing,
+    gx::Union{T,Nothing} = nothing,
     Hx = nothing,
-    cx::Union{T, Nothing} = nothing,
+    cx::Union{T,Nothing} = nothing,
     Jx = nothing,
-    lambda::Union{T, Nothing} = nothing,
-    mu::Union{T, Nothing} = nothing,
-    lambdaG::Union{T, Nothing} = nothing,
-    lambdaH::Union{T, Nothing}= nothing,
-    cGx::Union{T, Nothing} = nothing,
+    lambda::Union{T,Nothing} = nothing,
+    mu::Union{T,Nothing} = nothing,
+    lambdaG::Union{T,Nothing} = nothing,
+    lambdaH::Union{T,Nothing} = nothing,
+    cGx::Union{T,Nothing} = nothing,
     JGx = nothing,
-    cHx::Union{T, Nothing} = nothing,
+    cHx::Union{T,Nothing} = nothing,
     JHx = nothing,
     matrix_info::Bool = true,
     convert::Bool = true,
@@ -194,11 +194,11 @@ function Stopping.fill_in!(
 
     if stp.pb.meta.ncon > 0
         gJx = if !isnothing(Jx)
-        Jx
+            Jx
         elseif typeof(stp.current_state.Jx) <: LinearOperator
-        jac_op(stp.pb, x)
+            jac_op(stp.pb, x)
         else # typeof(stp.current_state.Jx) <: SparseArrays.SparseMatrixCSC
-        jac(stp.pb, x)
+            jac(stp.pb, x)
         end
         gcx = isnothing(cx) ? cons(stp.pb, x) : cx
     else
@@ -211,11 +211,11 @@ function Stopping.fill_in!(
         lb, lc = _compute_mutliplier(stp.pb, x, ggx, gcx, gJx; kwargs...)
     else
         lb = if isnothing(mu) & has_bounds(stp.pb)
-        zeros(eltype(T), get_nvar(stp.pb))
+            zeros(eltype(T), get_nvar(stp.pb))
         elseif isnothing(mu) & !has_bounds(stp.pb)
-        zeros(eltype(T), 0)
+            zeros(eltype(T), 0)
         else
-        mu
+            mu
         end
         lc = isnothing(lambda) ? zeros(eltype(T), get_ncon(stp.pb)) : lambda
     end
@@ -275,66 +275,66 @@ _resources_check!: check if the optimization algorithm has exhausted the resourc
 Note: function uses counters in stp.pb, and update the counters in the state
 """
 function _resources_check!(
-  stp::MPCCStopping{Pb, M, SRC, T, MStp, LoS},
-  x::S,
-) where {Pb <: AbstractMPCCModel, M, SRC, T, MStp, LoS, S}
-  max_cntrs = stp.meta.max_cntrs
+    stp::MPCCStopping{Pb,M,SRC,T,MStp,LoS},
+    x::S,
+) where {Pb<:AbstractMPCCModel,M,SRC,T,MStp,LoS,S}
+    max_cntrs = stp.meta.max_cntrs
 
-  if length(max_cntrs) == 0
+    if length(max_cntrs) == 0
+        return stp.meta.resources
+    end
+
+    # check all the entries in the counter
+    max_f = check_entries_counters(stp.pb, max_cntrs)
+
+    # Maximum number of function and derivative(s) computation
+    if :neval_sum in keys(max_cntrs)
+        max_evals = sum_counters(stp.pb) > max_cntrs[:neval_sum]
+    end
+
+    # global user limit diagnostic
+    if (max_evals || max_f)
+        stp.meta.resources = true
+    end
+
     return stp.meta.resources
-  end
-
-  # check all the entries in the counter
-  max_f = check_entries_counters(stp.pb, max_cntrs)
-
-  # Maximum number of function and derivative(s) computation
-  if :neval_sum in keys(max_cntrs)
-    max_evals = sum_counters(stp.pb) > max_cntrs[:neval_sum]
-  end
-
-  # global user limit diagnostic
-  if (max_evals || max_f)
-    stp.meta.resources = true
-  end
-
-  return stp.meta.resources
 end
 
 function check_entries_counters(nlp::AbstractMPCCModel, max_cntrs)
     for f in keys(max_cntrs)
-      if f in fieldnames(Counters)
-        if eval(f)(nlp)::Int > max_cntrs[f]
-          return true
+        if f in fieldnames(Counters)
+            if eval(f)(nlp)::Int > max_cntrs[f]
+                return true
+            end
         end
-      end
-      if f in fieldnames(MPCCCounters)
-        if eval(f)(nlp)::Int > max_cntrs[f]
-          return true
+        if f in fieldnames(MPCCCounters)
+            if eval(f)(nlp)::Int > max_cntrs[f]
+                return true
+            end
         end
-      end
     end
     return false
 end
 
 function _unbounded_problem_check!(
-  stp::MPCCStopping{Pb, M, SRC, MPCCAtX{Score, S, T}, MStp, LoS},
-  x::AbstractVector,
-) where {Pb, M, SRC, MStp, LoS, Score, S, T}
-  if isnan(get_fx(stp.current_state))
-    stp.current_state.fx = obj(stp.pb, x)
-  end
+    stp::MPCCStopping{Pb,M,SRC,MPCCAtX{Score,S,T},MStp,LoS},
+    x::AbstractVector,
+) where {Pb,M,SRC,MStp,LoS,Score,S,T}
+    if isnan(get_fx(stp.current_state))
+        stp.current_state.fx = obj(stp.pb, x)
+    end
 
-  if stp.pb.meta.minimize
-    f_too_large = get_fx(stp.current_state) <= -stp.meta.unbounded_threshold
-  else
-    f_too_large = get_fx(stp.current_state) >= stp.meta.unbounded_threshold
-  end
+    if stp.pb.meta.minimize
+        f_too_large = get_fx(stp.current_state) <= -stp.meta.unbounded_threshold
+    else
+        f_too_large = get_fx(stp.current_state) >= stp.meta.unbounded_threshold
+    end
 
-  if f_too_large
-    stp.meta.unbounded_pb = true
-  end
+    if f_too_large
+        stp.meta.unbounded_pb = true
+    end
 
-  return stp.meta.unbounded_pb
+    return stp.meta.unbounded_pb
 end
 
 ################################################################################

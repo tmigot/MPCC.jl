@@ -147,7 +147,8 @@ function SStat(
 
     res = WStat(pb, state, pnorm = pnorm; kwargs...)
     sign =
-        pb.cc_meta.ncc > 0 ? norm(_sign_multipliers_comp_Sstat(pb, state, actif), pnorm) : 0.0
+        pb.cc_meta.ncc > 0 ? norm(_sign_multipliers_comp_Sstat(pb, state, actif), pnorm) :
+        0.0
 
     return max(res, sign)
 end
