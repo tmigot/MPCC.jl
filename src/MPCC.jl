@@ -193,13 +193,4 @@ include("MPCCStopping.jl")
 
 export MPCCStopping, _init_max_counters_mpcc, SStat, MStat, CStat, WStat
 
-#=
-include("BPMPCC.jl")
-
-export BPMPCCModel
-
-include("MPCCAmpl.jl")
-
-export MPCCAmpl
-=#
 end #end of module
