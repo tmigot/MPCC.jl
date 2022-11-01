@@ -244,12 +244,3 @@ end
 @testset "MPCCStopping tests" begin
     include("test-mpcc-stopping.jl")
 end
-
-#=
-printstyled("Bilevel Programming MPCC tests... ")
-include("run_test_bpmpcc.jl")
-printstyled("passed ✓ \n", color = :green)
-printstyled("Ampl MPCC tests... ")
-include("run_test_mpccampl.jl")
-printstyled("passed ✓ \n", color = :green)
-=#
