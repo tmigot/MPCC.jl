@@ -35,8 +35,8 @@ struct MPCCModelMeta{T,S} <: AbstractMPCCModelMeta{T,S}
     yH::S    # initial Lagrange multipliers
     lccG::S    # vector of constraint lower bounds of the complementarity constraint
     lccH::S    # vector of constraint upper bounds of the complementarity constraint
-    nnzjG::Any
-    nnzjH::Any
+    nnzjG::Int
+    nnzjH::Int
 end
 
 function MPCCModelMeta{T,S}(
