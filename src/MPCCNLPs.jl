@@ -6,7 +6,6 @@ mutable struct MPCCNLPs{T,S} <: AbstractMPCCModel{T,S}
 
     meta::NLPModelMeta{T,S}
     cc_meta::MPCCModelMeta{T,S}
-    counters::Counters
     cc_counters::MPCCCounters
 
 end
@@ -51,7 +50,7 @@ function MPCCNLPs(
         name = mp.meta.name,
     )
 
-    return MPCCNLPs(mp, G, H, meta, cc_meta, Counters(), MPCCCounters())
+    return MPCCNLPs(mp, G, H, meta, cc_meta, MPCCCounters())
 end
 
 @default_cc_counters MPCCNLPs mp

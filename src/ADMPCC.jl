@@ -2,7 +2,6 @@ mutable struct ADMPCCModel{T,S,Si} <: AbstractMPCCModel{T,S}
     nlp::ADNLPModel{T,S,Si}
     meta::NLPModelMeta{T,S}
     cc_meta::MPCCModelMeta{T,S}
-    counters::Counters
     cc_counters::MPCCCounters
 
     # Functions
@@ -26,7 +25,7 @@ function ADMPCCModel(
     meta = nlp.meta # NLPModelMeta(nvar; x0 = x0, kwargs...) # Not sure about this one
     ncc = length(lccG)
     cc_meta = MPCCModelMeta(nvar, ncc, lccG = lccG, lccH = lccH, yG = yG, yH = yH)
-    return ADMPCCModel(nlp, meta, cc_meta, Counters(), MPCCCounters(), G, H)
+    return ADMPCCModel(nlp, meta, cc_meta, MPCCCounters(), G, H)
 end
 
 for meth in (:obj, :grad!, :objgrad!, :objcons!, :jac_op!, :ghjvprod!, :jth_hprod!)
