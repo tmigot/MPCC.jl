@@ -196,11 +196,11 @@ using Stopping
 
 import Stopping: reinit!, update!, _init_field
 
-include("MPCCState.jl")
+include("Stop/MPCCState.jl")
 
 export MPCCAtX
 
-include("MPCCStopping.jl")
+include("Stop/MPCCStopping.jl")
 
 export MPCCStopping, _init_max_counters_mpcc, SStat, MStat, CStat, WStat
 
