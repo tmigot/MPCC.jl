@@ -44,14 +44,21 @@ jprod!(nlp::ADMPCCModel, x::AbstractVector, v::AbstractVector, Jv::AbstractVecto
 jtprod!(nlp::ADMPCCModel, x::AbstractVector, v::AbstractVector, Jtv::AbstractVector) =
     jtprod!(nlp.nlp, x, v, Jtv)
 
+@default_cc_counters ADMPCCModel nlp
+
+function NLPModels.reset!(nlp::ADMPCCModel)
+    reset!(nlp.cc_counters)
+    reset!(nlp.nlp)
+end
+
 function consG!(nlp::ADMPCCModel, x::AbstractVector, c::AbstractVector)
-    increment!(nlp, :neval_consG)
+    increment_cc!(nlp, :neval_consG)
     c[1:nlp.cc_meta.ncc] .= nlp.G(x)
     return c
 end
 
 function consH!(nlp::ADMPCCModel, x::AbstractVector, c::AbstractVector)
-    increment!(nlp, :neval_consH)
+    increment_cc!(nlp, :neval_consH)
     c[1:nlp.cc_meta.ncc] .= nlp.H(x)
     return c
 end
@@ -70,7 +77,7 @@ end
 
 function jacG_coord!(nlp::ADMPCCModel, x::AbstractVector, vals::AbstractVector)
     m, n = nlp.cc_meta.ncc, nlp.meta.nvar
-    increment!(nlp, :neval_jacG)
+    increment_cc!(nlp, :neval_jacG)
     Jx = ForwardDiff.jacobian(nlp.G, x)
     vals[1:n*m] .= Jx[:]
     return vals
@@ -90,14 +97,14 @@ end
 
 function jacH_coord!(nlp::ADMPCCModel, x::AbstractVector, vals::AbstractVector)
     m, n = nlp.cc_meta.ncc, nlp.meta.nvar
-    increment!(nlp, :neval_jacH)
+    increment_cc!(nlp, :neval_jacH)
     Jx = ForwardDiff.jacobian(nlp.H, x)
     vals[1:n*m] .= Jx[:]
     return vals
 end
 
 function jGprod!(nlp::ADMPCCModel, x::AbstractVector, v::AbstractVector, Jv::AbstractVector)
-    increment!(nlp, :neval_jGprod)
+    increment_cc!(nlp, :neval_jGprod)
     Jv[1:nlp.cc_meta.ncc] .= ForwardDiff.derivative(t -> nlp.G(x + t * v), 0)
     return Jv
 end
@@ -108,13 +115,13 @@ function jGtprod!(
     v::AbstractVector,
     Jtv::AbstractVector,
 )
-    increment!(nlp, :neval_jGtprod)
+    increment_cc!(nlp, :neval_jGtprod)
     Jtv[1:nlp.meta.nvar] .= ForwardDiff.gradient(x -> dot(nlp.G(x), v), x)
     return Jtv
 end
 
 function jHprod!(nlp::ADMPCCModel, x::AbstractVector, v::AbstractVector, Jv::AbstractVector)
-    increment!(nlp, :neval_jHprod)
+    increment_cc!(nlp, :neval_jHprod)
     Jv[1:nlp.cc_meta.ncc] .= ForwardDiff.derivative(t -> nlp.H(x + t * v), 0)
     return Jv
 end
@@ -125,7 +132,7 @@ function jHtprod!(
     v::AbstractVector,
     Jtv::AbstractVector,
 )
-    increment!(nlp, :neval_jHtprod)
+    increment_cc!(nlp, :neval_jHtprod)
     Jtv[1:nlp.meta.nvar] .= ForwardDiff.gradient(x -> dot(nlp.H(x), v), x)
     return Jtv
 end
@@ -202,7 +209,7 @@ function hessG_coord!(
     y::AbstractVector,
     vals::AbstractVector,
 )
-    increment!(nlp, :neval_hessG)
+    increment_cc!(nlp, :neval_hessG)
     ℓ(x) = dot(nlp.G(x), y)
     Hx = ForwardDiff.hessian(ℓ, x)
     k = 1
@@ -283,7 +290,7 @@ function hGprod!(
     v::AbstractVector,
     Hv::AbstractVector,
 )
-    increment!(nlp, :neval_hGprod)
+    increment_cc!(nlp, :neval_hGprod)
     ℓ(x) = dot(nlp.G(x), y)
     Hv .= ForwardDiff.derivative(t -> ForwardDiff.gradient(ℓ, x + t * v), 0)
     return Hv
@@ -296,7 +303,7 @@ function hHprod!(
     v::AbstractVector,
     Hv::AbstractVector,
 )
-    increment!(nlp, :neval_hHprod)
+    increment_cc!(nlp, :neval_hHprod)
     ℓ(x) = dot(nlp.H(x), y)
     Hv .= ForwardDiff.derivative(t -> ForwardDiff.gradient(ℓ, x + t * v), 0)
     return Hv
