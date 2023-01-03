@@ -1,12 +1,12 @@
-mutable struct ADMPCCModel{T,S,Si} <: AbstractMPCCModel{T,S}
+mutable struct ADMPCCModel{T,S,Si,FG <: Function,FH <: Function} <: AbstractMPCCModel{T,S}
     nlp::ADNLPModel{T,S,Si}
     meta::NLPModelMeta{T,S}
     cc_meta::MPCCModelMeta{T,S}
     cc_counters::MPCCCounters
 
     # Functions
-    G::Any
-    H::Any
+    G::FG
+    H::FH
 end
 
 function ADMPCCModel(
