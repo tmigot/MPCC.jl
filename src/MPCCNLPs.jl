@@ -54,6 +54,13 @@ function MPCCNLPs(
     return MPCCNLPs(mp, G, H, meta, cc_meta, Counters(), MPCCCounters())
 end
 
+@default_cc_counters MPCCNLPs mp
+
+function NLPModels.reset!(nlp::MPCCNLPs)
+    reset!(nlp.cc_counters)
+    reset!(nlp.mp)
+end
+
 for meth in (:obj, :grad!, :objgrad!, :objcons!, :jac_op!, :ghjvprod!, :jth_hprod!)
     @eval begin
         $meth(nlp::MPCCNLPs, args...; kwargs...) = $meth(nlp.mp, args...; kwargs...)
@@ -73,7 +80,7 @@ jtprod!(nlp::MPCCNLPs, x::AbstractVector, v::AbstractVector, Jtv::AbstractVector
 Evaluate ``G(x)``, the constraints at `x`.
 """
 function consG!(mod::MPCCNLPs, x::Vector, c::AbstractVector)
-    increment!(mod, :neval_consG)
+    increment_cc!(mod, :neval_consG)
     cons!(mod.G, x, c)
 end
 
@@ -81,7 +88,7 @@ end
 Evaluate ``H(x)``, the constraints at `x`.
 """
 function consH!(mod::MPCCNLPs, x::Vector, c::AbstractVector)
-    increment!(mod, :neval_consH)
+    increment_cc!(mod, :neval_consH)
     cons!(mod.H, x, c)
 end
 
@@ -183,7 +190,7 @@ end
 Evaluate ``∇G(x)v``, the Jacobian-vector product at `x` in place.
 """
 function jGprod!(mod::MPCCNLPs, x::AbstractVector, v::AbstractVector, Jv::AbstractVector)
-    increment!(mod, :neval_jGprod)
+    increment_cc!(mod, :neval_jGprod)
     jprod!(mod.G, x, v, Jv)
 end
 
@@ -192,7 +199,7 @@ end
 Evaluate ``∇H(x)v``, the Jacobian-vector product at `x` in place.
 """
 function jHprod!(mod::MPCCNLPs, x::AbstractVector, v::AbstractVector, Jv::AbstractVector)
-    increment!(mod, :neval_jHprod)
+    increment_cc!(mod, :neval_jHprod)
     jprod!(mod.H, x, v, Jv)
 end
 
@@ -201,7 +208,7 @@ end
 Evaluate ``∇G(x)^Tv``, the transposed-Jacobian-vector product at `x`
 """
 function jGtprod!(mod::MPCCNLPs, x::Vector, v::Vector, Jtv::Vector)
-    increment!(mod, :neval_jGtprod)
+    increment_cc!(mod, :neval_jGtprod)
     jtprod!(mod.G, x, v, Jtv)
 end
 
@@ -210,7 +217,7 @@ end
 Evaluate ``∇H(x)^Tv``, the transposed-Jacobian-vector product at `x`
 """
 function jHtprod!(mod::MPCCNLPs, x::Vector, v::Vector, Jtv::Vector)
-    increment!(mod, :neval_jHtprod)
+    increment_cc!(mod, :neval_jHtprod)
     jtprod!(mod.H, x, v, Jtv)
 end
 
@@ -221,7 +228,7 @@ function hGprod!(
     v::AbstractVector,
     Hv::AbstractVector,
 )
-    increment!(mod, :neval_hGprod)
+    increment_cc!(mod, :neval_hGprod)
     hprod!(mod.G, x, y, v, Hv, obj_weight = 0)
 end
 
@@ -232,7 +239,7 @@ function hHprod!(
     v::AbstractVector,
     Hv::AbstractVector,
 )
-    increment!(mod, :neval_hHprod)
+    increment_cc!(mod, :neval_hHprod)
     hprod!(mod.H, x, y, v, Hv, obj_weight = 0)
 end
 

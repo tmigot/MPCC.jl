@@ -43,20 +43,16 @@ for counter in fieldnames(MPCCCounters)
 end
 
 """
-    increment!(nlp, s)
+    increment_cc!(nlp, s)
 Increment counter `s` of problem `nlp`.
 """
-function NLPModels.increment!(nlp::AbstractMPCCModel, s::Symbol)
-    if s in fieldnames(MPCCCounters)
-        setfield!(nlp.cc_counters, s, getfield(nlp.cc_counters, s) + 1)
-    else
-        setfield!(nlp.counters, s, getfield(nlp.counters, s) + 1)
-    end
+function increment_cc!(nlp::AbstractMPCCModel, s::Symbol)
+    setfield!(nlp.cc_counters, s, getfield(nlp.cc_counters, s) + 1)
 end
 
 """
     decrement!(nlp, s)
-Increment counter `s` of problem `nlp`.
+Decrement counter `s` of problem `nlp`.
 """
 function NLPModels.decrement!(nlp::AbstractMPCCModel, s::Symbol)
     if s in fieldnames(MPCCCounters)
@@ -84,4 +80,15 @@ Reset evaluation count in `nlp`
 function NLPModels.reset!(nlp::AbstractMPCCModel)
     reset!(nlp.cc_counters)
     return nlp
+end
+
+# Adapted from https://github.com/JuliaSmoothOptimizers/NLPModels.jl/blob/d05c1509ac2041fb39e0a500b1b67cc1b353971a/src/nlp/utils.jl#L119
+macro default_cc_counters(Model, inner)
+  ex = Expr(:block)
+  for foo in fieldnames(Counters) ∪ [:sum_counters]
+    push!(ex.args, :(NLPModels.$foo(nlp::$(esc(Model))) = $foo(nlp.$inner)))
+  end
+  push!(ex.args, :(NLPModels.increment!(nlp::$(esc(Model)), s::Symbol) = increment!(nlp.$inner, s)))
+  push!(ex.args, :(NLPModels.decrement!(nlp::$(esc(Model)), s::Symbol) = decrement!(nlp.$inner, s)))
+  ex
 end
