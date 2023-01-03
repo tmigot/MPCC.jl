@@ -167,7 +167,16 @@ export AbstractMPCCModel,
     hessH_op,
     hessH_op!
 
-export neval_obj, neval_grad, neval_hess, neval_hprod, neval_cons, neval_cons_lin, neval_cons_nln, neval_jac, neval_jac_lin, neval_jac_nln
+export neval_obj,
+    neval_grad,
+    neval_hess,
+    neval_hprod,
+    neval_cons,
+    neval_cons_lin,
+    neval_cons_nln,
+    neval_jac,
+    neval_jac_lin,
+    neval_jac_nln
 
 using ADNLPModels, ForwardDiff
 

@@ -1,4 +1,4 @@
-mutable struct ADMPCCModel{T,S,Si,FG <: Function,FH <: Function} <: AbstractMPCCModel{T,S}
+mutable struct ADMPCCModel{T,S,Si,FG<:Function,FH<:Function} <: AbstractMPCCModel{T,S}
     nlp::ADNLPModel{T,S,Si}
     meta::NLPModelMeta{T,S}
     cc_meta::MPCCModelMeta{T,S}
