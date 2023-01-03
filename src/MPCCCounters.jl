@@ -84,11 +84,17 @@ end
 
 # Adapted from https://github.com/JuliaSmoothOptimizers/NLPModels.jl/blob/d05c1509ac2041fb39e0a500b1b67cc1b353971a/src/nlp/utils.jl#L119
 macro default_cc_counters(Model, inner)
-  ex = Expr(:block)
-  for foo in fieldnames(Counters) ∪ [:sum_counters]
-    push!(ex.args, :(NLPModels.$foo(nlp::$(esc(Model))) = $foo(nlp.$inner)))
-  end
-  push!(ex.args, :(NLPModels.increment!(nlp::$(esc(Model)), s::Symbol) = increment!(nlp.$inner, s)))
-  push!(ex.args, :(NLPModels.decrement!(nlp::$(esc(Model)), s::Symbol) = decrement!(nlp.$inner, s)))
-  ex
+    ex = Expr(:block)
+    for foo in fieldnames(Counters) ∪ [:sum_counters]
+        push!(ex.args, :(NLPModels.$foo(nlp::$(esc(Model))) = $foo(nlp.$inner)))
+    end
+    push!(
+        ex.args,
+        :(NLPModels.increment!(nlp::$(esc(Model)), s::Symbol) = increment!(nlp.$inner, s)),
+    )
+    push!(
+        ex.args,
+        :(NLPModels.decrement!(nlp::$(esc(Model)), s::Symbol) = decrement!(nlp.$inner, s)),
+    )
+    ex
 end
