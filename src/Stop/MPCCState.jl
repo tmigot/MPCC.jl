@@ -28,7 +28,7 @@ Note: * by default, unknown entries are set to nothing (except evals).
       * x and lambda are mandatory entries. If no constraints lambda = [].
       * The constructor check the size of the entries.
 """
-mutable struct MPCCAtX{Score,S,T<:AbstractVector} <: AbstractState{S,T}
+mutable struct MPCCAtX{Score,S,T<:AbstractVector} <: Stopping.AbstractState{S,T}
 
     #Unconstrained State
     x::T     # current point
@@ -62,21 +62,21 @@ mutable struct MPCCAtX{Score,S,T<:AbstractVector} <: AbstractState{S,T}
     function MPCCAtX(
         x::T,
         lambda::T,
-        current_score::Score = _init_field(eltype(T));
-        fx::eltype(T) = _init_field(eltype(T)),
-        gx::T = _init_field(T),
-        Hx = _init_field(Matrix{eltype(T)}),
-        mu::T = _init_field(T),
-        cx::T = _init_field(T),
-        Jx = _init_field(SparseMatrixCSC{eltype(T),Int64}),
-        lambdaG::T = _init_field(T),
-        lambdaH::T = _init_field(T),
-        cGx::T = _init_field(T),
-        JGx = _init_field(SparseMatrixCSC{eltype(T),Int64}),
-        cHx::T = _init_field(T),
-        JHx = _init_field(SparseMatrixCSC{eltype(T),Int64}),
-        d::T = _init_field(T),
-        res::T = _init_field(T),
+        current_score::Score = Stopping._init_field(eltype(T));
+        fx::eltype(T) = Stopping._init_field(eltype(T)),
+        gx::T = Stopping._init_field(T),
+        Hx = Stopping._init_field(Matrix{eltype(T)}),
+        mu::T = Stopping._init_field(T),
+        cx::T = Stopping._init_field(T),
+        Jx = Stopping._init_field(SparseMatrixCSC{eltype(T),Int64}),
+        lambdaG::T = Stopping._init_field(T),
+        lambdaH::T = Stopping._init_field(T),
+        cGx::T = Stopping._init_field(T),
+        JGx = Stopping._init_field(SparseMatrixCSC{eltype(T),Int64}),
+        cHx::T = Stopping._init_field(T),
+        JHx = Stopping._init_field(SparseMatrixCSC{eltype(T),Int64}),
+        d::T = Stopping._init_field(T),
+        res::T = Stopping._init_field(T),
         current_time::Float64 = NaN,
     ) where {Score,T<:AbstractVector}
 
@@ -103,11 +103,11 @@ mutable struct MPCCAtX{Score,S,T<:AbstractVector} <: AbstractState{S,T}
     end
 end
 
-function reinit!(stateatx::MPCCAtX, x::Vector, l::Vector; kwargs...)
+function Stopping.reinit!(stateatx::MPCCAtX, x::Vector, l::Vector; kwargs...)
 
     for k ∈ fieldnames(MPCCAtX)
         if !(k ∈ [:x, :lambda])
-            setfield!(stateatx, k, _init_field(typeof(getfield(stateatx, k))))
+            setfield!(stateatx, k, Stopping._init_field(typeof(getfield(stateatx, k))))
         end
     end
 
@@ -118,11 +118,11 @@ function reinit!(stateatx::MPCCAtX, x::Vector, l::Vector; kwargs...)
         return stateatx #save the update! call if no other kwargs than x
     end
 
-    return update!(stateatx; kwargs...)
+    return Stopping.update!(stateatx; kwargs...)
 end
 
-function reinit!(stateatx::MPCCAtX; kwargs...)
-    return reinit!(stateatx, stateatx.x, stateatx.lambda; kwargs...)
+function Stopping.reinit!(stateatx::MPCCAtX; kwargs...)
+    return Stopping.reinit!(stateatx, stateatx.x, stateatx.lambda; kwargs...)
 end
 
 for field in fieldnames(MPCCAtX)
@@ -137,7 +137,7 @@ for field in fieldnames(MPCCAtX)
     @eval export $meth
 end
 
-function set_current_score!(
+function Stopping.set_current_score!(
     state::MPCCAtX{Score,S,T},
     current_score::Score,
 ) where {Score,S,T}
@@ -157,7 +157,7 @@ function Stopping.set_current_score!(
     return state
 end
 
-function set_x!(state::MPCCAtX{Score,S,T}, x::T) where {Score,S,T}
+function Stopping.set_x!(state::MPCCAtX{Score,S,T}, x::T) where {Score,S,T}
     if length(state.x) == length(x)
         state.x .= x
     else
@@ -166,7 +166,7 @@ function set_x!(state::MPCCAtX{Score,S,T}, x::T) where {Score,S,T}
     return state
 end
 
-function set_d!(state::MPCCAtX{Score,S,T}, d::T) where {Score,S,T}
+function Stopping.set_d!(state::MPCCAtX{Score,S,T}, d::T) where {Score,S,T}
     if length(state.d) == length(d)
         state.d .= d
     else
@@ -175,7 +175,7 @@ function set_d!(state::MPCCAtX{Score,S,T}, d::T) where {Score,S,T}
     return state
 end
 
-function set_res!(state::MPCCAtX{Score,S,T}, res::T) where {Score,S,T}
+function Stopping.set_res!(state::MPCCAtX{Score,S,T}, res::T) where {Score,S,T}
     if length(state.res) == length(res)
         state.res .= res
     else
@@ -184,7 +184,7 @@ function set_res!(state::MPCCAtX{Score,S,T}, res::T) where {Score,S,T}
     return state
 end
 
-function set_lambda!(state::MPCCAtX{Score,S,T}, lambda::T) where {Score,S,T}
+function Stopping.set_lambda!(state::MPCCAtX{Score,S,T}, lambda::T) where {Score,S,T}
     if length(state.lambda) == length(lambda)
         state.lambda .= lambda
     else
@@ -193,7 +193,7 @@ function set_lambda!(state::MPCCAtX{Score,S,T}, lambda::T) where {Score,S,T}
     return state
 end
 
-function set_mu!(state::MPCCAtX{Score,S,T}, mu::T) where {Score,S,T}
+function Stopping.set_mu!(state::MPCCAtX{Score,S,T}, mu::T) where {Score,S,T}
     if length(state.mu) == length(mu)
         state.mu .= mu
     else
@@ -202,12 +202,12 @@ function set_mu!(state::MPCCAtX{Score,S,T}, mu::T) where {Score,S,T}
     return state
 end
 
-function set_fx!(state::MPCCAtX{Score,S,T}, fx::S) where {Score,S,T}
+function Stopping.set_fx!(state::MPCCAtX{Score,S,T}, fx::S) where {Score,S,T}
     state.fx = fx
     return state
 end
 
-function set_gx!(state::MPCCAtX{Score,S,T}, gx::T) where {Score,S,T}
+function Stopping.set_gx!(state::MPCCAtX{Score,S,T}, gx::T) where {Score,S,T}
     if length(state.gx) == length(gx)
         state.gx .= gx
     else
@@ -216,7 +216,7 @@ function set_gx!(state::MPCCAtX{Score,S,T}, gx::T) where {Score,S,T}
     return state
 end
 
-function set_cx!(state::MPCCAtX{Score,S,T}, cx::T) where {Score,S,T}
+function Stopping.set_cx!(state::MPCCAtX{Score,S,T}, cx::T) where {Score,S,T}
     if length(state.cx) == length(cx)
         state.cx .= cx
     else

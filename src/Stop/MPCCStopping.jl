@@ -1,8 +1,3 @@
-using Stopping
-
-import Stopping: fill_in!, _resources_check!, _unbounded_problem_check!, _optimality_check
-import Stopping: start!, stop!, update_and_start!, update_and_stop!, reinit!, status
-
 """
 Type: MPCCStopping (specialization of GenericStopping)
 Methods: start!, stop!, update_and_start!, update_and_stop!, fill_in!, reinit!, status
@@ -20,7 +15,6 @@ Stopping structure for non-linear programming problems using NLPModels.
 
 `MPCCStopping(:: AbstractMPCCModel, :: AbstractState; meta :: AbstractStoppingMeta = StoppingMeta(), main_stp :: Union{AbstractStopping, Nothing} = nothing, list :: Union{ListStates, Nothing} = nothing, user_specific_struct :: Any = nothing, kwargs...)`
 
-
  Note:
  * optimality_check : takes two inputs (AbstractMPCCModel, MPCCAtX)
  and returns a Float64 to be compared at 0.
@@ -30,7 +24,7 @@ Stopping structure for non-linear programming problems using NLPModels.
  Warning:
  * optimality_check does not necessarily fill in the State.
  """
-mutable struct MPCCStopping{Pb,M,SRC,T,MStp,LoS} <: AbstractStopping{Pb,M,SRC,T,MStp,LoS}
+mutable struct MPCCStopping{Pb,M,SRC,T,MStp,LoS} <: Stopping.AbstractStopping{Pb,M,SRC,T,MStp,LoS}
 
     # problem
     pb::Pb
@@ -54,16 +48,16 @@ end
 
 function MPCCStopping(
     pb::AbstractMPCCModel,
-    current_state::AbstractState;
-    stop_remote::AbstractStopRemoteControl = StopRemoteControl(),
-    main_stp::AbstractStopping = VoidStopping(),
-    list::AbstractListofStates = VoidListofStates(),
+    current_state::Stopping.AbstractState;
+    stop_remote::Stopping.AbstractStopRemoteControl = Stopping.StopRemoteControl(),
+    main_stp::Stopping.AbstractStopping = Stopping.VoidStopping(),
+    list::Stopping.AbstractListofStates = Stopping.VoidListofStates(),
     user_struct::AbstractDict = Dict(),
     kwargs...,
 )
 
     if !(isempty(kwargs))
-        meta = StoppingMeta(;
+        meta = Stopping.StoppingMeta(;
             max_cntrs = _init_max_counters_mpcc(),
             optimality_check = MStat,
             kwargs...,
@@ -95,8 +89,8 @@ function MPCCStopping(pb::AbstractMPCCModel; n_listofstates::Integer = 0, kwargs
     admissible = (x, y; kwargs...) -> MStat(x, y; kwargs...)
 
     if n_listofstates > 0 && :list ∉ keys(kwargs)
-        list = ListofStates(n_listofstates, Val{typeof(nlp_at_x)}())
-        return NLPStopping(pb, nlp_at_x, list = list, optimality_check = KKT; kwargs...)
+        list = Stopping.ListofStates(n_listofstates, Val{typeof(nlp_at_x)}())
+        return Stopping.NLPStopping(pb, nlp_at_x, list = list, optimality_check = KKT; kwargs...)
     end
 
     return MPCCStopping(pb, nlp_at_x, optimality_check = admissible; kwargs...)
@@ -208,7 +202,7 @@ function Stopping.fill_in!(
 
     #update the Lagrange multiplier if one of the 2 is asked
     if (stp.pb.meta.ncon > 0 || has_bounds(stp.pb)) && (isnothing(lambda) || isnothing(mu))
-        lb, lc = _compute_mutliplier(stp.pb, x, ggx, gcx, gJx; kwargs...)
+        lb, lc = Stopping._compute_mutliplier(stp.pb, x, ggx, gcx, gJx; kwargs...)
     else
         lb = if isnothing(mu) & has_bounds(stp.pb)
             zeros(eltype(T), get_nvar(stp.pb))
@@ -232,12 +226,11 @@ function Stopping.fill_in!(
     #if (stp.pb.cc_meta.ncc > 0 && stp.pb.meta.ncon > 0 && has_bounds(stp.pb)) && (lambdaG == nothing || lambdaH == nothing ||lambda == nothing || mu == nothing)
     if (stp.pb.cc_meta.ncc > 0) &&
        (lambdaG == nothing || lambdaH == nothing || lambda == nothing || mu == nothing)
-        lb, lc, lG, lH =
-            _compute_mutliplier(stp.pb, x, ggx, gcx, gJx, gcGx, gJGx, gcHx, gJHx, kwargs...)
+        lb, lc, lG, lH = Stopping._compute_mutliplier(stp.pb, x, ggx, gcx, gJx, gcGx, gJGx, gcHx, gJHx, kwargs...)
         #elseif (stp.pb.meta.ncon > 0 && has_bounds(stp.pb)) && (lambda == nothing || mu == nothing)
     elseif (stp.pb.meta.ncon > 0 || has_bounds(stp.pb)) &&
            (lambda == nothing || mu == nothing)
-        lb, lc = _compute_mutliplier(stp.pb.mp, x, ggx, gcx, gJx, kwargs...)
+        lb, lc = Stopping._compute_mutliplier(stp.pb.mp, x, ggx, gcx, gJx, kwargs...)
         lG, lH = lambdaG, lambdaH
     elseif stp.pb.meta.ncon == 0 && !has_bounds(stp.pb) && lambda == nothing
         lb, lc = mu, stp.current_state.lambda
@@ -247,7 +240,7 @@ function Stopping.fill_in!(
         lG, lH = lambdaG, lambdaH
     end
 
-    return update!(
+    return Stopping.update!(
         stp.current_state,
         x = x,
         fx = gfx,
@@ -274,7 +267,7 @@ _resources_check!: check if the optimization algorithm has exhausted the resourc
 
 Note: function uses counters in stp.pb, and update the counters in the state
 """
-function _resources_check!(
+function Stopping._resources_check!(
     stp::MPCCStopping{Pb,M,SRC,T,MStp,LoS},
     x::S,
 ) where {Pb<:AbstractMPCCModel,M,SRC,T,MStp,LoS,S}
@@ -285,7 +278,7 @@ function _resources_check!(
     end
 
     # check all the entries in the counter
-    max_f = check_entries_counters(stp.pb, max_cntrs)
+    max_f = Stopping.check_entries_counters(stp.pb, max_cntrs)
 
     # Maximum number of function and derivative(s) computation
     if :neval_sum in keys(max_cntrs)
@@ -300,7 +293,7 @@ function _resources_check!(
     return stp.meta.resources
 end
 
-function check_entries_counters(nlp::AbstractMPCCModel, max_cntrs)
+function Stopping.check_entries_counters(nlp::AbstractMPCCModel, max_cntrs)
     for f in keys(max_cntrs)
         if f in fieldnames(Counters)
             if eval(f)(nlp)::Int > max_cntrs[f]
@@ -316,7 +309,7 @@ function check_entries_counters(nlp::AbstractMPCCModel, max_cntrs)
     return false
 end
 
-function _unbounded_problem_check!(
+function Stopping._unbounded_problem_check!(
     stp::MPCCStopping{Pb,M,SRC,MPCCAtX{Score,S,T},MStp,LoS},
     x::AbstractVector,
 ) where {Pb,M,SRC,MStp,LoS,Score,S,T}

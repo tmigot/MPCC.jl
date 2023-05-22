@@ -1,9 +1,8 @@
 module MPCC
 
-using LinearAlgebra, LinearOperators, SparseArrays, FastClosures
-using NLPModels, Printf
-
-using Test
+using LinearAlgebra, Printf, SparseArrays #stdlib
+using FastClosures, LinearOperators, NLPModels
+using Requires
 
 import NLPModels:
     obj,
@@ -178,12 +177,6 @@ export neval_obj,
     neval_jac_lin,
     neval_jac_nln
 
-using ADNLPModels, ForwardDiff
-
-include("ADMPCC.jl")
-
-export ADMPCCModel
-
 include("MPCCNLPs.jl")
 
 export MPCCNLPs #, jacl, jac_actif
@@ -192,16 +185,27 @@ include("NLMPCC.jl")
 
 export NLMPCC
 
-using Stopping
+@init begin
+    @require ADNLPModels = "54578032-b7ea-4c30-94aa-7cbd1cce6c9a" begin
+        using ForwardDiff
 
-import Stopping: reinit!, update!, _init_field
+        include("ADMPCC.jl")
 
-include("Stop/MPCCState.jl")
+        export ADMPCCModel
+    end
+end
 
-export MPCCAtX
+@init begin
+    @require Stopping = "c4fe5a9e-e7fb-5c3d-89d5-7f405ab2214f" begin
 
-include("Stop/MPCCStopping.jl")
+        include("Stop/MPCCState.jl")
 
-export MPCCStopping, _init_max_counters_mpcc, SStat, MStat, CStat, WStat
+        export MPCCAtX
+
+        include("Stop/MPCCStopping.jl")
+
+        export MPCCStopping, _init_max_counters_mpcc, SStat, MStat, CStat, WStat
+    end
+end
 
 end #end of module

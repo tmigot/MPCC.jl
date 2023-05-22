@@ -2,7 +2,7 @@
 _compute_mutliplier: Additional function to estimate Lagrange multiplier of the problems
     (guarantee if LICQ holds)
 """
-function _compute_mutliplier(
+function Stopping._compute_mutliplier(
     pb::AbstractNLPModel,
     x::T,
     gx::T,
@@ -42,7 +42,7 @@ function _compute_mutliplier(
     return mu, lambda
 end
 
-function _compute_mutliplier(
+function Stopping._compute_mutliplier(
     pb::AbstractMPCCModel,
     x::AbstractVector,
     gx::AbstractVector,

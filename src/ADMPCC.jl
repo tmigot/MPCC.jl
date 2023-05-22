@@ -1,5 +1,5 @@
 mutable struct ADMPCCModel{T,S,Si,FG<:Function,FH<:Function} <: AbstractMPCCModel{T,S}
-    nlp::ADNLPModel{T,S,Si}
+    nlp::ADNLPModels.ADNLPModel{T,S,Si}
     meta::NLPModelMeta{T,S}
     cc_meta::MPCCModelMeta{T,S}
     cc_counters::MPCCCounters
@@ -19,7 +19,7 @@ function ADMPCCModel(
     yH::S = fill!(similar(lccG), zero(eltype(S))),
     kwargs...,
 ) where {S}
-    nlp = ADNLPModel(args...; kwargs...)
+    nlp = ADNLPModels.ADNLPModel(args...; kwargs...)
     x0 = nlp.meta.x0
     nvar = length(x0)
     meta = nlp.meta # NLPModelMeta(nvar; x0 = x0, kwargs...) # Not sure about this one
