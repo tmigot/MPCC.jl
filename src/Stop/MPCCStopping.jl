@@ -24,7 +24,8 @@ Stopping structure for non-linear programming problems using NLPModels.
  Warning:
  * optimality_check does not necessarily fill in the State.
  """
-mutable struct MPCCStopping{Pb,M,SRC,T,MStp,LoS} <: Stopping.AbstractStopping{Pb,M,SRC,T,MStp,LoS}
+mutable struct MPCCStopping{Pb,M,SRC,T,MStp,LoS} <:
+               Stopping.AbstractStopping{Pb,M,SRC,T,MStp,LoS}
 
     # problem
     pb::Pb
@@ -90,7 +91,13 @@ function MPCCStopping(pb::AbstractMPCCModel; n_listofstates::Integer = 0, kwargs
 
     if n_listofstates > 0 && :list ∉ keys(kwargs)
         list = Stopping.ListofStates(n_listofstates, Val{typeof(nlp_at_x)}())
-        return Stopping.NLPStopping(pb, nlp_at_x, list = list, optimality_check = KKT; kwargs...)
+        return Stopping.NLPStopping(
+            pb,
+            nlp_at_x,
+            list = list,
+            optimality_check = KKT;
+            kwargs...,
+        )
     end
 
     return MPCCStopping(pb, nlp_at_x, optimality_check = admissible; kwargs...)
@@ -226,7 +233,18 @@ function Stopping.fill_in!(
     #if (stp.pb.cc_meta.ncc > 0 && stp.pb.meta.ncon > 0 && has_bounds(stp.pb)) && (lambdaG == nothing || lambdaH == nothing ||lambda == nothing || mu == nothing)
     if (stp.pb.cc_meta.ncc > 0) &&
        (lambdaG == nothing || lambdaH == nothing || lambda == nothing || mu == nothing)
-        lb, lc, lG, lH = Stopping._compute_mutliplier(stp.pb, x, ggx, gcx, gJx, gcGx, gJGx, gcHx, gJHx, kwargs...)
+        lb, lc, lG, lH = Stopping._compute_mutliplier(
+            stp.pb,
+            x,
+            ggx,
+            gcx,
+            gJx,
+            gcGx,
+            gJGx,
+            gcHx,
+            gJHx,
+            kwargs...,
+        )
         #elseif (stp.pb.meta.ncon > 0 && has_bounds(stp.pb)) && (lambda == nothing || mu == nothing)
     elseif (stp.pb.meta.ncon > 0 || has_bounds(stp.pb)) &&
            (lambda == nothing || mu == nothing)
