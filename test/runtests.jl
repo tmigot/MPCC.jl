@@ -1,11 +1,11 @@
-# This package
-using MPCC
 #stdlib
 using LinearAlgebra, SparseArrays, Printf, Test
 # JSO
 using ADNLPModels, JuMP, LinearOperators, NLPModels, NLPModelsJuMP
 # Stopping
 using Stopping
+# This package
+using MPCC
 
 include("problems.jl")
 include("rosenbrock.jl")

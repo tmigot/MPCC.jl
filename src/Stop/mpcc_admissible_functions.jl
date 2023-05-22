@@ -2,7 +2,7 @@
 constrained: return the violation of the KKT conditions
 length(lambda) > 0
 """
-function _grad_lagrangian(pb::AbstractMPCCModel, state::MPCCAtX)
+function Stopping._grad_lagrangian(pb::AbstractMPCCModel, state::MPCCAtX)
 
     if (pb.meta.ncon + pb.cc_meta.ncc) == 0 & !has_bounds(pb)
         return state.gx
@@ -16,7 +16,7 @@ function _grad_lagrangian(pb::AbstractMPCCModel, state::MPCCAtX)
     end
 end
 
-function _sign_multipliers_bounds(pb::AbstractMPCCModel, state::MPCCAtX)
+function Stopping._sign_multipliers_bounds(pb::AbstractMPCCModel, state::MPCCAtX)
     if has_bounds(pb)
         return vcat(
             min.(max.(state.mu, 0.0), -state.x + pb.meta.uvar),
@@ -27,7 +27,7 @@ function _sign_multipliers_bounds(pb::AbstractMPCCModel, state::MPCCAtX)
     end
 end
 
-function _sign_multipliers_nonlin(pb::AbstractMPCCModel, state::MPCCAtX)
+function Stopping._sign_multipliers_nonlin(pb::AbstractMPCCModel, state::MPCCAtX)
     if pb.meta.ncon == 0
         return zeros(0)
     else
@@ -74,7 +74,7 @@ function _sign_multipliers_comp_Cstat(pb::AbstractMPCCModel, state::MPCCAtX)
     return max.(eq, pos)
 end
 
-function _feasibility(pb::AbstractMPCCModel, state::MPCCAtX)
+function Stopping._feasibility(pb::AbstractMPCCModel, state::MPCCAtX)
     if (pb.meta.ncon + pb.cc_meta.ncc) == 0
         return vcat(max.(state.x - pb.meta.uvar, 0.0), max.(-state.x + pb.meta.lvar, 0.0))
     elseif pb.cc_meta.ncc == 0
@@ -109,15 +109,15 @@ required: state.gx
 function WStat(pb::AbstractMPCCModel, state::MPCCAtX; pnorm::Float64 = Inf, kwargs...)
 
     #Check the gradient of the Lagrangian
-    gLagx = _grad_lagrangian(pb, state)
+    gLagx = Stopping._grad_lagrangian(pb, state)
     #Check the complementarity condition for the bounds
-    res_bounds = _sign_multipliers_bounds(pb, state)
+    res_bounds = Stopping._sign_multipliers_bounds(pb, state)
     #Check the complementarity condition for the constraints
-    res_nonlin = _sign_multipliers_nonlin(pb, state)
+    res_nonlin = Stopping._sign_multipliers_nonlin(pb, state)
     #Check the complementarity condition for the complementarity constraints
     res_comp = _sign_multipliers_comp(pb, state)
     #Check the feasibility
-    feas = _feasibility(pb, state)
+    feas = Stopping._feasibility(pb, state)
 
     res = vcat(gLagx, feas, res_bounds, res_nonlin, res_comp)
 

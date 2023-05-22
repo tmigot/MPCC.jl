@@ -17,7 +17,7 @@
     stop_nlp = MPCCStopping(mpcc, nlp_at_x, optimality0 = 0.0, optimality_check = SStat)
 
     a = zeros(5)
-    MPCC.fill_in!(stop_nlp, a)
+    fill_in!(stop_nlp, a)
 
     # we make sure that the fill_in! function works properly
     @test obj(mpcc, a) == stop_nlp.current_state.fx
