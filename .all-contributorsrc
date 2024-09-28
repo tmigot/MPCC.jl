@@ -1,5 +1,26 @@
 {
-  "projectName": "MPCC",
+  "projectName": "MPCC.jl",
   "projectOwner": "tmigot",
-  "files": ["README.md", "docs/src/index.md"]
+  "files": [
+    "README.md",
+    "docs/src/index.md"
+  ],
+  "commitType": "docs",
+  "commitConvention": "angular",
+  "contributorsPerLine": 7,
+  "contributors": [
+    {
+      "login": "tmigot",
+      "name": "Tangi Migot",
+      "avatar_url": "https://avatars.githubusercontent.com/u/25304288?v=4",
+      "profile": "http://tmigot.github.io",
+      "contributions": [
+        "projectManagement",
+        "maintenance",
+        "doc",
+        "test",
+        "code"
+      ]
+    }
+  ]
 }
