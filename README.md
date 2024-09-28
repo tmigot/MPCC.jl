@@ -55,7 +55,7 @@ The package contains the basic tools to use the [Stopping](https://github.com/So
 
 The simplest way to define an `MPCCModel` uses automatic differentiation:
 
-```
+```julia
 using MPCC
 f(x) = sum(x) # objective function
 x0 = ones(6)
@@ -68,7 +68,7 @@ admpcc = ADMPCCModel(G, H, lccg, lcch, f, x0, lvar, uvar)
 
 The resulting is an instance of an `AbstractMPCCModel` with all capabilities of an `AbstractNLPModel` such as
 
-```
+```julia
 x = rand(6)
 grad(admpcc, x) # returns the gradient of the objective function
 neval_grad(admpcc) # returns the number of evaluation of grad
@@ -77,7 +77,7 @@ reset!(admpcc) # reset the internal counter
 
 but also exports functions to deal with complementarity constraints
 
-```
+```julia
 x = rand(6)
 (consG(admpcc, x), consH(admpcc, x))
 ```
@@ -92,13 +92,13 @@ It also possible to convert the problem as a classical nonlinear optimization mo
 
 using `NLMPCC` as follows
 
-```
+```julia
 nlp = NLMPCC(admpcc)
 ```
 
 so that
 
-```
+```julia
 cons(nlp, x)
 ```
 
