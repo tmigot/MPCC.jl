@@ -1,0 +1,13 @@
+# Changes here will be overwritten by Copier
+AnswerStrategy: recommended
+Authors: Tangi Migot <tangi.migot@gmail.com>
+CodeOfConductContact: tangi.migot@gmail.com
+Indentation: 2
+JuliaMinVersion: '1.6'
+License: MIT
+LicenseCopyrightHolders: Tangi Migot
+PackageName: MPCC
+PackageOwner: tmigot
+PackageUUID: 0aaa5dc6-5b17-11ea-26af-6b0517bcf4f8
+_commit: v0.10.1
+_src_path: https://github.com/abelsiqueira/BestieTemplate.jl
