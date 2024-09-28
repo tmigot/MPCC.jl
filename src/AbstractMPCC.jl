@@ -9,7 +9,7 @@ for field in [:G, :H]
 
     namelin = Symbol("cons", field, "_", clinnln)
     namelinin = Symbol("cons", field, "_", clinnln, "!")
-    
+
     nameJstructlin = Symbol("jac", field, "_", clinnln, "_structure")
     nameJstructlinin = Symbol("jac", field, "_", clinnln, "_structure!")
     nccnlinnnzj = Symbol(field, clinnln, "_nnzj")
@@ -31,8 +31,8 @@ for field in [:G, :H]
       Evaluate the $($nameclinnln) constraints at `x`.
       """
       function $namelin(nlp::AbstractMPCCModel, x::AbstractVector)
-          c = similar(x, nlp.cc_meta.$nccnlin)
-          return $namelinin(nlp, x, c)
+        c = similar(x, nlp.cc_meta.$nccnlin)
+        return $namelinin(nlp, x, c)
       end
       @doc """
           c = $($namelinin)(nlp, x, c)
@@ -72,7 +72,7 @@ for field in [:G, :H]
 
       Evaluate ``J(x)``, the $($nameclinnln) constraints Jacobian at `x` in sparse coordinate format.
       """
-      function $nameJcoordlin(nlp::AbstractMPCCModel{T, S}, x::AbstractVector) where {T, S}
+      function $nameJcoordlin(nlp::AbstractMPCCModel{T,S}, x::AbstractVector) where {T,S}
         @lencheck nlp.meta.nvar x
         vals = S(undef, nlp.cc_meta.$nccnlinnnzj)
         return $nameJcoordlinin(nlp, x, vals)
@@ -83,7 +83,11 @@ for field in [:G, :H]
 
       Evaluate ``J(x)v``, the $($nameclinnln) Jacobian-vector product at `x`.
       """
-      function $nameJprodlin(nlp::AbstractMPCCModel{T, S}, x::AbstractVector, v::AbstractVector) where {T, S}
+      function $nameJprodlin(
+        nlp::AbstractMPCCModel{T,S},
+        x::AbstractVector,
+        v::AbstractVector,
+      ) where {T,S}
         @lencheck nlp.meta.nvar x v
         Jv = S(undef, nlp.cc_meta.$nccnlin)
         return $nameJprodlinin(nlp, x, v, Jv)
@@ -101,7 +105,11 @@ for field in [:G, :H]
 
       Evaluate ``J(x)^Tv``, the $($nameclinnln) transposed-Jacobian-vector product at `x`.
       """
-      function $nameJtprodlin(nlp::AbstractMPCCModel{T, S}, x::AbstractVector, v::AbstractVector) where {T, S}
+      function $nameJtprodlin(
+        nlp::AbstractMPCCModel{T,S},
+        x::AbstractVector,
+        v::AbstractVector,
+      ) where {T,S}
         @lencheck nlp.meta.nvar x
         @lencheck nlp.cc_meta.$nccnlin v
         Jtv = S(undef, nlp.meta.nvar)
@@ -122,7 +130,7 @@ for field in [:G, :H]
       The resulting object may be used as if it were a matrix, e.g., `J * v` or
       `J' * v`.
       """
-      function $nameJoplin(nlp::AbstractMPCCModel{T, S}, x::AbstractVector) where {T, S}
+      function $nameJoplin(nlp::AbstractMPCCModel{T,S}, x::AbstractVector) where {T,S}
         @lencheck nlp.meta.nvar x
         Jv = S(undef, nlp.cc_meta.$nccnlin)
         Jtv = S(undef, nlp.meta.nvar)
@@ -138,11 +146,11 @@ for field in [:G, :H]
       operations.
       """
       function $nameJoplinin(
-        nlp::AbstractMPCCModel{T, S},
+        nlp::AbstractMPCCModel{T,S},
         x::AbstractVector{T},
         Jv::AbstractVector,
         Jtv::AbstractVector,
-      ) where {T, S}
+      ) where {T,S}
         @lencheck nlp.meta.nvar x Jtv
         @lencheck nlp.cc_meta.$nccnlin Jv
         prod! = @closure (res, v, α, β) -> begin # res = α * J * v + β * res
@@ -163,7 +171,15 @@ for field in [:G, :H]
           end
           return res
         end
-        return LinearOperator{T}(nlp.cc_meta.$nccnlin, nlp.meta.nvar, false, false, prod!, ctprod!, ctprod!)
+        return LinearOperator{T}(
+          nlp.cc_meta.$nccnlin,
+          nlp.meta.nvar,
+          false,
+          false,
+          prod!,
+          ctprod!,
+          ctprod!,
+        )
       end
 
     end
@@ -171,7 +187,7 @@ for field in [:G, :H]
 
   namelin = Symbol("cons", field, "_lin!")
   namenln = Symbol("cons", field, "_nln!")
-  
+
   ncccount = Symbol("neval_cons", field)
 
   nccnlin = Symbol("n", field, "lin")
@@ -219,7 +235,7 @@ for field in [:G, :H]
   nameHstructin = Symbol("hess", field, "_structure!")
   nameHcoord = Symbol("hess", field, "_coord")
   nameHcoordin = Symbol("hess", field, "_coord!")
-  
+
   ncccount = Symbol("neval_cons", field)
   nccJcount = Symbol("neval_jac", field)
   nccJprodcount = Symbol("neval_j", field, "prod")
@@ -232,8 +248,8 @@ for field in [:G, :H]
     Evaluate the constraints of $($name) at `x`.
     """
     function $name(nlp::AbstractMPCCModel, x::AbstractVector)
-        c = similar(x, nlp.cc_meta.ncc)
-        return $namein(nlp, x, c)
+      c = similar(x, nlp.cc_meta.ncc)
+      return $namein(nlp, x, c)
     end
     @doc """
         c = $($name)(nlp, x, c)
@@ -272,12 +288,14 @@ for field in [:G, :H]
     ) where {T}
       @lencheck nlp.cc_meta.$nccnnzj rows cols
       lin_ind = 1:(nlp.cc_meta.$nccnlinnnzj)
-      nlp.cc_meta.$nccnlin > 0 && $namelinJstruct(nlp, view(rows, lin_ind), view(cols, lin_ind))
+      nlp.cc_meta.$nccnlin > 0 &&
+        $namelinJstruct(nlp, view(rows, lin_ind), view(cols, lin_ind))
       for i in lin_ind
         rows[i] += count(x < nlp.cc_meta.$nccnlin[rows[i]] for x in nlp.cc_meta.$nccnnln)
       end
       if nlp.cc_meta.$nccnnln > 0
-        nln_ind = (nlp.cc_meta.$nccnlinnnzj + 1):(nlp.cc_meta.$nccnlinnnzj + nlp.cc_meta.$nccnnlnnnzj)
+        nln_ind =
+          (nlp.cc_meta.$nccnlinnnzj+1):(nlp.cc_meta.$nccnlinnnzj+nlp.cc_meta.$nccnnlnnnzj)
         $namenlnJstruct(nlp, view(rows, nln_ind), view(cols, nln_ind))
         for i in nln_ind
           rows[i] += count(x < nlp.cc_meta.$nccnnln[rows[i]] for x in nlp.cc_meta.$nccnlin)
@@ -298,7 +316,8 @@ for field in [:G, :H]
       increment!(nlp, $nccJcount)
       lin_ind = 1:(nlp.cc_meta.$nccnlinnnzj)
       nlp.cc_meta.$nccnlin > 0 && $namelinJcoord(nlp, x, view(vals, lin_ind))
-      nln_ind = (nlp.cc_meta.$nccnlinnnzj + 1):(nlp.cc_meta.$nccnlinnnzj + nlp.cc_meta.$nccnnlnnnzj)
+      nln_ind =
+        (nlp.cc_meta.$nccnlinnnzj+1):(nlp.cc_meta.$nccnlinnnzj+nlp.cc_meta.$nccnnlnnnzj)
       nlp.cc_meta.$nccnnln > 0 && $namenlnJcoord(nlp, x, view(vals, nln_ind))
       return vals
     end
@@ -308,7 +327,7 @@ for field in [:G, :H]
 
     Evaluate ``J(x)``, the constraints Jacobian at `x` in sparse coordinate format.
     """
-    function $nameJcoord(nlp::AbstractMPCCModel{T, S}, x::AbstractVector) where {T, S}
+    function $nameJcoord(nlp::AbstractMPCCModel{T,S}, x::AbstractVector) where {T,S}
       @lencheck nlp.meta.nvar x
       vals = S(undef, nlp.cc_meta.$nccnnzj)
       return $nameJcoordin(nlp, x, vals)
@@ -331,7 +350,11 @@ for field in [:G, :H]
 
     Evaluate ``J(x)v``, the Jacobian-vector product at `x`.
     """
-    function $nameJprod(nlp::AbstractMPCCModel{T, S}, x::AbstractVector, v::AbstractVector) where {T, S}
+    function $nameJprod(
+      nlp::AbstractMPCCModel{T,S},
+      x::AbstractVector,
+      v::AbstractVector,
+    ) where {T,S}
       @lencheck nlp.meta.nvar x v
       Jv = S(undef, nlp.cc_meta.ncc)
       return $nameJprodin(nlp, x, v, Jv)
@@ -342,7 +365,12 @@ for field in [:G, :H]
 
     Evaluate ``J(x)v``, the Jacobian-vector product at `x` in place.
     """
-    function $nameJprodin(nlp::AbstractMPCCModel, x::AbstractVector, v::AbstractVector, Jv::AbstractVector)
+    function $nameJprodin(
+      nlp::AbstractMPCCModel,
+      x::AbstractVector,
+      v::AbstractVector,
+      Jv::AbstractVector,
+    )
       @lencheck nlp.meta.nvar x v
       @lencheck nlp.cc_meta.ncc Jv
       increment!(nlp, $nccJprodcount)
@@ -356,7 +384,11 @@ for field in [:G, :H]
 
     Evaluate ``J(x)^Tv``, the transposed-Jacobian-vector product at `x`.
     """
-    function $nameJtprod(nlp::AbstractMPCCModel{T, S}, x::AbstractVector, v::AbstractVector) where {T, S}
+    function $nameJtprod(
+      nlp::AbstractMPCCModel{T,S},
+      x::AbstractVector,
+      v::AbstractVector,
+    ) where {T,S}
       @lencheck nlp.meta.nvar x
       @lencheck nlp.cc_meta.ncc v
       Jtv = S(undef, nlp.meta.nvar)
@@ -369,7 +401,12 @@ for field in [:G, :H]
     Evaluate ``J(x)^Tv``, the transposed-Jacobian-vector product at `x` in place.
     If the problem has linear and nonlinear constraints, this function allocates.
     """
-    function $nameJtprodin(nlp::AbstractMPCCModel, x::AbstractVector, v::AbstractVector, Jtv::AbstractVector)
+    function $nameJtprodin(
+      nlp::AbstractMPCCModel,
+      x::AbstractVector,
+      v::AbstractVector,
+      Jtv::AbstractVector,
+    )
       @lencheck nlp.meta.nvar x Jtv
       @lencheck nlp.cc_meta.ncc v
       increment!(nlp, $nccJtprodcount)
@@ -398,7 +435,7 @@ for field in [:G, :H]
     The resulting object may be used as if it were a matrix, e.g., `J * v` or
     `J' * v`.
     """
-    function $nameJop(nlp::AbstractMPCCModel{T, S}, x::AbstractVector) where {T, S}
+    function $nameJop(nlp::AbstractMPCCModel{T,S}, x::AbstractVector) where {T,S}
       @lencheck nlp.meta.nvar x
       Jv = S(undef, nlp.cc_meta.ncc)
       Jtv = S(undef, nlp.meta.nvar)
@@ -414,11 +451,11 @@ for field in [:G, :H]
     operations.
     """
     function $nameJopin(
-      nlp::AbstractMPCCModel{T, S},
+      nlp::AbstractMPCCModel{T,S},
       x::AbstractVector{T},
       Jv::AbstractVector,
       Jtv::AbstractVector,
-    ) where {T, S}
+    ) where {T,S}
       @lencheck nlp.meta.nvar x Jtv
       @lencheck nlp.cc_meta.ncc Jv
       prod! = @closure (res, v, α, β) -> begin # res = α * J * v + β * res
@@ -439,7 +476,15 @@ for field in [:G, :H]
         end
         return res
       end
-      return LinearOperator{T}(nlp.cc_meta.ncc, nlp.meta.nvar, false, false, prod!, ctprod!, ctprod!)
+      return LinearOperator{T}(
+        nlp.cc_meta.ncc,
+        nlp.meta.nvar,
+        false,
+        false,
+        prod!,
+        ctprod!,
+        ctprod!,
+      )
     end
 
     """
@@ -475,10 +520,10 @@ for field in [:G, :H]
     Only the lower triangle is returned.
     """
     function $nameHcoord(
-      nlp::AbstractMPCCModel{T, S},
+      nlp::AbstractMPCCModel{T,S},
       x::AbstractVector,
-      y::AbstractVector
-    ) where {T, S}
+      y::AbstractVector,
+    ) where {T,S}
       @lencheck nlp.meta.nvar x
       @lencheck nlp.cc_meta.ncc y
       vals = S(undef, nlp.meta.nnzh)
@@ -488,14 +533,14 @@ for field in [:G, :H]
     """
         Hx = $($nameH)(nlp, x, y)
 
-    Evaluate the Lagrangian Hessian at `(x,y)` as a sparse matrix. 
+    Evaluate the Lagrangian Hessian at `(x,y)` as a sparse matrix.
     A `Symmetric` object wrapping the lower triangle is returned.
     """
     function $nameH(
-      nlp::AbstractMPCCModel{T, S},
+      nlp::AbstractMPCCModel{T,S},
       x::AbstractVector,
-      y::AbstractVector
-    ) where {T, S}
+      y::AbstractVector,
+    ) where {T,S}
       @lencheck nlp.meta.nvar x
       @lencheck nlp.cc_meta.ncc y
       rows, cols = $nameHstruct(nlp)
@@ -509,11 +554,11 @@ for field in [:G, :H]
     Evaluate the product of the Lagrangian Hessian at `(x,y)` with the vector `v`.
     """
     function $nameHprod(
-      nlp::AbstractMPCCModel{T, S},
+      nlp::AbstractMPCCModel{T,S},
       x::AbstractVector,
       y::AbstractVector,
       v::AbstractVector,
-    ) where {T, S}
+    ) where {T,S}
       @lencheck nlp.meta.nvar x v
       @lencheck nlp.cc_meta.ncc y
       Hv = S(undef, nlp.meta.nvar)
@@ -535,10 +580,10 @@ for field in [:G, :H]
     matrix, e.g., `H * v`.
     """
     function $nameHop(
-      nlp::AbstractMPCCModel{T, S},
+      nlp::AbstractMPCCModel{T,S},
       x::AbstractVector,
       y::AbstractVector,
-    ) where {T, S}
+    ) where {T,S}
       @lencheck nlp.meta.nvar x
       @lencheck nlp.cc_meta.ncc y
       Hv = S(undef, nlp.meta.nvar)
@@ -554,11 +599,11 @@ for field in [:G, :H]
     used as preallocated storage for the operation.
     """
     function $nameHopin(
-      nlp::AbstractMPCCModel{T, S},
+      nlp::AbstractMPCCModel{T,S},
       x::AbstractVector,
       y::AbstractVector,
       Hv::AbstractVector,
-    ) where {T, S}
+    ) where {T,S}
       @lencheck nlp.meta.nvar x Hv
       @lencheck nlp.cc_meta.ncc y
       prod! = @closure (res, v, α, β) -> begin
@@ -570,7 +615,15 @@ for field in [:G, :H]
         end
         return res
       end
-      return LinearOperator{T}(nlp.meta.nvar, nlp.meta.nvar, true, true, prod!, prod!, prod!)
+      return LinearOperator{T}(
+        nlp.meta.nvar,
+        nlp.meta.nvar,
+        true,
+        true,
+        prod!,
+        prod!,
+        prod!,
+      )
     end
 
   end

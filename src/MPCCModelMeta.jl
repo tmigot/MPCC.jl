@@ -76,7 +76,27 @@ function MPCCModelMeta{T,S}(
   Gnln_nnzj = nnzjG - Glin_nnzj
   Hnln_nnzj = nnzjH - Hlin_nnzj
 
-  MPCCModelMeta{T,S}(ncc, Glin, Gnlin, Gnln, Gnnln, Hlin, Hnlin, Hnln, Hnnln, yG, yH, lccG, lccH, nnzjG, Glin_nnzj, Gnln_nnzj, nnzjH, Hlin_nnzj, Hnln_nnzj)
+  MPCCModelMeta{T,S}(
+    ncc,
+    Glin,
+    Gnlin,
+    Gnln,
+    Gnnln,
+    Hlin,
+    Hnlin,
+    Hnln,
+    Hnnln,
+    yG,
+    yH,
+    lccG,
+    lccH,
+    nnzjG,
+    Glin_nnzj,
+    Gnln_nnzj,
+    nnzjH,
+    Hlin_nnzj,
+    Hnln_nnzj,
+  )
 end
 
 MPCCModelMeta(nvar, ncc; yG::S = zeros(ncc), kwargs...) where {S} =
