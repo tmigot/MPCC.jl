@@ -11,12 +11,12 @@ body:
 
         - You have checked the [documentation](https://tmigot.github.io/MPCC.jl) and haven't found enough information
         - There is not an [existing issue](https://github.com/tmigot/MPCC.jl/issues) with the same question
-        
+
         - You have read the [contributing guide](https://tmigot.github.io/MPCC.jl/dev/90-contributing/)
-        
-        
+
+
         - You are following the [code of conduct](https://github.com/tmigot/MPCC.jl/blob/main/CODE_OF_CONDUCT.md)
-        
+
 
         The form below should help you in filling out this issue.
   - type: textarea
