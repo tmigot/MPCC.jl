@@ -48,8 +48,6 @@ import NLPModels:
 
 using NLPModels: @lencheck, @rangecheck
 
-include("utils.jl")
-
 """
 Base type for an optimization model with degenerate constraints.
 
@@ -60,6 +58,7 @@ Base type for an optimization model with degenerate constraints.
 """
 abstract type AbstractMPCCModel{T,S} <: AbstractNLPModel{T,S} end
 
+include("utils.jl")
 include("MPCCModelMeta.jl")
 
 export AbstractMPCCModelMeta, MPCCModelMeta, complementarity_constrained

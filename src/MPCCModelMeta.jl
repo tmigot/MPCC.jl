@@ -30,27 +30,53 @@ A composite type that represents the main features of the optimization problem
 """
 struct MPCCModelMeta{T,S} <: AbstractMPCCModelMeta{T,S}
 
-  ncc::Int               # number of complementarity constraints
-  yG::S    # initial Lagrange multipliers
-  yH::S    # initial Lagrange multipliers
+  ncc::Int   # number of complementarity constraints
+  Glin::Vector{Int}
+  Gnlin::Int
+  Gnln::Vector{Int}
+  Gnnln::Int
+  Hlin::Vector{Int}
+  Hnlin::Int
+  Hnln::Vector{Int}
+  Hnnln::Int
+  yG::S      # initial Lagrange multipliers
+  yH::S      # initial Lagrange multipliers
   lccG::S    # vector of constraint lower bounds of the complementarity constraint
   lccH::S    # vector of constraint upper bounds of the complementarity constraint
   nnzjG::Int
+  Glin_nnzj::Int
+  Gnln_nnzj::Int
   nnzjH::Int
+  Hlin_nnzj::Int
+  Hnln_nnzj::Int
 end
 
 function MPCCModelMeta{T,S}(
   nvar,
   ncc;
+  Glin = Int[],
+  Hlin = Int[],
   yG::S = fill!(S(undef, ncc), zero(T)),
   yH::S = fill!(S(undef, ncc), zero(T)),
   lccG::S = fill!(S(undef, ncc), T(-Inf)),
   lccH::S = fill!(S(undef, ncc), T(Inf)),
   nnzjG = ncc * nvar,
+  Glin_nnzj = 0,
   nnzjH = ncc * nvar,
+  Hlin_nnzj = 0,
 ) where {T,S}
   @lencheck ncc lccG lccH yG yH
-  MPCCModelMeta{T,S}(ncc, yG, yH, lccG, lccH, nnzjG, nnzjH)
+  Gnlin = length(Glin)
+  Gnln = setdiff(1:ncc, Glin)
+  Gnnln = length(Gnln)
+  Hnlin = length(Hlin)
+  Hnln = setdiff(1:ncc, Hlin)
+  Hnnln = length(Hnln)
+
+  Gnln_nnzj = nnzjG - Glin_nnzj
+  Hnln_nnzj = nnzjH - Hlin_nnzj
+
+  MPCCModelMeta{T,S}(ncc, Glin, Gnlin, Gnln, Gnnln, Hlin, Hnlin, Hnln, Hnnln, yG, yH, lccG, lccH, nnzjG, Glin_nnzj, Gnln_nnzj, nnzjH, Hlin_nnzj, Hnln_nnzj)
 end
 
 MPCCModelMeta(nvar, ncc; yG::S = zeros(ncc), kwargs...) where {S} =
