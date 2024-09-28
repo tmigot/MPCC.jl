@@ -1,6 +1,6 @@
 name = "MPCC"
 uuid = "0aaa5dc6-5b17-11ea-26af-6b0517bcf4f8"
-authors = ["tmigot <tangi.migot@gmail.com>"]
+authors = ["Tangi Migot <tangi.migot@gmail.com>"]
 version = "0.1.0"
 
 [deps]
@@ -15,6 +15,7 @@ SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 Stopping = "c4fe5a9e-e7fb-5c3d-89d5-7f405ab2214f"
 
 [compat]
+julia = "1.6"
 FastClosures = "0.3"
 ForwardDiff = "0.10"
 LinearOperators = "2"

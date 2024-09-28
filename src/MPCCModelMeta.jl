@@ -30,31 +30,31 @@ A composite type that represents the main features of the optimization problem
 """
 struct MPCCModelMeta{T,S} <: AbstractMPCCModelMeta{T,S}
 
-    ncc::Int               # number of complementarity constraints
-    yG::S    # initial Lagrange multipliers
-    yH::S    # initial Lagrange multipliers
-    lccG::S    # vector of constraint lower bounds of the complementarity constraint
-    lccH::S    # vector of constraint upper bounds of the complementarity constraint
-    nnzjG::Int
-    nnzjH::Int
+  ncc::Int               # number of complementarity constraints
+  yG::S    # initial Lagrange multipliers
+  yH::S    # initial Lagrange multipliers
+  lccG::S    # vector of constraint lower bounds of the complementarity constraint
+  lccH::S    # vector of constraint upper bounds of the complementarity constraint
+  nnzjG::Int
+  nnzjH::Int
 end
 
 function MPCCModelMeta{T,S}(
-    nvar,
-    ncc;
-    yG::S = fill!(S(undef, ncc), zero(T)),
-    yH::S = fill!(S(undef, ncc), zero(T)),
-    lccG::S = fill!(S(undef, ncc), T(-Inf)),
-    lccH::S = fill!(S(undef, ncc), T(Inf)),
-    nnzjG = ncc * nvar,
-    nnzjH = ncc * nvar,
+  nvar,
+  ncc;
+  yG::S = fill!(S(undef, ncc), zero(T)),
+  yH::S = fill!(S(undef, ncc), zero(T)),
+  lccG::S = fill!(S(undef, ncc), T(-Inf)),
+  lccH::S = fill!(S(undef, ncc), T(Inf)),
+  nnzjG = ncc * nvar,
+  nnzjH = ncc * nvar,
 ) where {T,S}
-    @lencheck ncc lccG lccH yG yH
-    MPCCModelMeta{T,S}(ncc, yG, yH, lccG, lccH, nnzjG, nnzjH)
+  @lencheck ncc lccG lccH yG yH
+  MPCCModelMeta{T,S}(ncc, yG, yH, lccG, lccH, nnzjG, nnzjH)
 end
 
 MPCCModelMeta(nvar, ncc; yG::S = zeros(ncc), kwargs...) where {S} =
-    MPCCModelMeta{eltype(S),S}(nvar, ncc, yG = yG; kwargs...)
+  MPCCModelMeta{eltype(S),S}(nvar, ncc, yG = yG; kwargs...)
 
 """
     complementarity_constrained(nlp)
@@ -65,4 +65,4 @@ Unconstrained problems return true.
 """
 complementarity_constrained(meta::MPCCModelMeta) = meta.ncc > 0
 complementarity_constrained(nlp::AbstractMPCCModel) =
-    complementarity_constrained(nlp.cc_meta)
+  complementarity_constrained(nlp.cc_meta)
