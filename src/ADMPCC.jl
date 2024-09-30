@@ -19,7 +19,11 @@ function ADMPCCModel(
   yH::S = fill!(similar(lccG), zero(eltype(S))),
   kwargs...,
 ) where {S}
-  nlp = ADNLPModels.ADNLPModel(args...; kwargs...)
+  nlp = ADNLPModels.ADNLPModel(
+    args...;
+    hessian_backend = ADNLPModels.ForwardDiffADHessian,
+    kwargs...,
+  )
   nvar = nlp.meta.nvar
   meta = NLPModelMeta(
     nvar,
@@ -191,7 +195,7 @@ function hess_coord!(
   increment!(nlp, :neval_hess)
   ncon, ncc = nlp.meta.ncon, nlp.cc_meta.ncc
   ℓ(x) =
-    obj_weight * nlp.nlp.f(x) + dot(cons(nlp.nlp, x), y[1:ncon]) -
+    ADNLPModels.get_lag(nlp.nlp, nlp.nlp.adbackend.hessian_backend, obj_weight)(x) -
     dot(nlp.G(x), y[ncon+1:ncon+ncc]) - dot(nlp.H(x), y[ncon+ncc+1:ncon+2*ncc])
   Hx = ForwardDiff.hessian(ℓ, x)
   k = 1
@@ -289,8 +293,13 @@ function hprod!(
 )
   increment!(nlp, :neval_hprod)
   ncon, ncc = nlp.meta.ncon, nlp.cc_meta.ncc
+  function c(x; ncon = ncon)
+    cx = similar(x, ncon)
+    nlp.nlp.c!(cx, x)
+    return cx
+  end
   ℓ(x) =
-    obj_weight * nlp.nlp.f(x) + dot(cons(nlp.nlp, x), y[1:ncon]) -
+    ADNLPModels.get_lag(nlp.nlp, nlp.nlp.adbackend.hessian_backend, obj_weight)(x) -
     dot(nlp.G(x), y[ncon+1:ncon+ncc]) - dot(nlp.H(x), y[ncon+ncc+1:ncon+2*ncc])
   Hv .= ForwardDiff.derivative(t -> ForwardDiff.gradient(ℓ, x + t * v), 0)
   return Hv
