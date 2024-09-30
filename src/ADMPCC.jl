@@ -20,9 +20,23 @@ function ADMPCCModel(
   kwargs...,
 ) where {S}
   nlp = ADNLPModels.ADNLPModel(args...; kwargs...)
-  x0 = nlp.meta.x0
-  nvar = length(x0)
-  meta = nlp.meta # NLPModelMeta(nvar; x0 = x0, kwargs...) # Not sure about this one
+  nvar = nlp.meta.nvar
+  meta = NLPModelMeta(
+    nvar,
+    x0 = nlp.meta.x0,
+    lvar = nlp.meta.lvar,
+    uvar = nlp.meta.uvar,
+    ncon = nlp.meta.ncon,
+    y0 = nlp.meta.y0,
+    lcon = nlp.meta.lcon,
+    ucon = nlp.meta.ucon,
+    nnzj = nlp.meta.nnzj,
+    nln_nnzj = nlp.meta.nnzj,
+    # nnzh = nnzh,
+    # minimize = minimize,
+    # islp = false,
+    name = nlp.meta.name,
+  )
   ncc = length(lccG)
   cc_meta = MPCCModelMeta(nvar, ncc, lccG = lccG, lccH = lccH, yG = yG, yH = yH)
   return ADMPCCModel(nlp, meta, cc_meta, MPCCCounters(), G, H)
@@ -177,7 +191,7 @@ function hess_coord!(
   increment!(nlp, :neval_hess)
   ncon, ncc = nlp.meta.ncon, nlp.cc_meta.ncc
   ℓ(x) =
-    obj_weight * nlp.nlp.f(x) + dot(nlp.nlp.c(x), y[1:ncon]) -
+    obj_weight * nlp.nlp.f(x) + dot(cons(nlp.nlp, x), y[1:ncon]) -
     dot(nlp.G(x), y[ncon+1:ncon+ncc]) - dot(nlp.H(x), y[ncon+ncc+1:ncon+2*ncc])
   Hx = ForwardDiff.hessian(ℓ, x)
   k = 1
@@ -276,7 +290,7 @@ function hprod!(
   increment!(nlp, :neval_hprod)
   ncon, ncc = nlp.meta.ncon, nlp.cc_meta.ncc
   ℓ(x) =
-    obj_weight * nlp.nlp.f(x) + dot(nlp.nlp.c(x), y[1:ncon]) -
+    obj_weight * nlp.nlp.f(x) + dot(cons(nlp.nlp, x), y[1:ncon]) -
     dot(nlp.G(x), y[ncon+1:ncon+ncc]) - dot(nlp.H(x), y[ncon+ncc+1:ncon+2*ncc])
   Hv .= ForwardDiff.derivative(t -> ForwardDiff.gradient(ℓ, x + t * v), 0)
   return Hv
