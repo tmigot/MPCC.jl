@@ -165,7 +165,7 @@ end
 end
 
 @testset "MPCCAtX tests" begin
-  state = MPCCAtX(zeros(10), zeros(0), cGx = [0.0], cHx = [1.0])
+  state = MPCCStoppingExt.MPCCAtX(zeros(10), zeros(0), cGx = [0.0], cHx = [1.0])
 
   @test state.x == zeros(10)
   @test isnan(state.fx)
