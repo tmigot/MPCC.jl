@@ -178,10 +178,6 @@ export neval_obj,
   neval_jac_lin,
   neval_jac_nln
 
-include("MPCCNLPs.jl")
-
-export MPCCNLPs #, jacl, jac_actif
-
 include("NLMPCC.jl")
 
 export NLMPCC
