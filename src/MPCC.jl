@@ -192,17 +192,4 @@ export NLMPCC
   end
 end
 
-@init begin
-  @require Stopping = "c4fe5a9e-e7fb-5c3d-89d5-7f405ab2214f" begin
-
-    include("Stop/MPCCState.jl")
-
-    export MPCCAtX
-
-    include("Stop/MPCCStopping.jl")
-
-    export MPCCStopping, _init_max_counters_mpcc, SStat, MStat, CStat, WStat
-  end
-end
-
 end #end of module
