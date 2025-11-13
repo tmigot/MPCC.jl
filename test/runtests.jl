@@ -7,7 +7,12 @@ using Stopping
 # This package
 using MPCC
 
-include("problems.jl")
+include("problems/bard1.jl")
+include("problems/ex1.jl")
+include("problems/ex1bd.jl")
+include("problems/ex2.jl")
+include("problems/ex3.jl")
+
 include("rosenbrock.jl")
 
 @testset "MPCCMeta tests" begin
