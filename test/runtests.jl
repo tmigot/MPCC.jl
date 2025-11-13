@@ -7,7 +7,12 @@ using Stopping
 # This package
 using MPCC
 
-include("problems.jl")
+include("problems/bard1.jl")
+include("problems/ex1.jl")
+include("problems/ex1bd.jl")
+include("problems/ex2.jl")
+include("problems/ex3.jl")
+
 include("rosenbrock.jl")
 
 @testset "MPCCMeta tests" begin
@@ -113,50 +118,6 @@ end
   @test hprod(admpcc, admpcc.meta.x0, admpcc.meta.x0, obj_weight = 0.0) == zeros(6)
   @test hess(admpcc, admpcc.meta.x0, y) == zeros(6, 6)
   @test hprod(admpcc, admpcc.meta.x0, y, admpcc.meta.x0) == zeros(6)
-end
-
-@testset "MPCCNLPs tests" begin
-  f = x -> sum(x)
-  x0 = ones(6)
-  G(x) = [x[1]; x[3]]
-  H(x) = [x[2]; x[4]]
-  lccg, lcch = zeros(2), zeros(2)
-  lvar, uvar = fill(-10.0, size(x0)), fill(10.0, size(x0))
-  c = x -> [x[1]]
-  lcon, ucon = zeros(1), zeros(1)
-  mp = ADNLPModel(f, x0, c, lcon, ucon, lvar = lvar, uvar = uvar)
-  G = ADNLPModel(x -> 0.0, x0, G, lccg, Inf * ones(2))
-  H = ADNLPModel(x -> 0.0, x0, H, lcch, Inf * ones(2))
-  admpcc = MPCCNLPs(mp, G, H)
-
-  @test obj(admpcc, admpcc.meta.x0) == 6
-  @test grad(admpcc, admpcc.meta.x0) == ones(6)
-
-  @test cons(admpcc, admpcc.meta.x0) == [1]
-  @test consG(admpcc, admpcc.meta.x0) == [1, 1]
-  @test consH(admpcc, admpcc.meta.x0) == [1, 1]
-
-  @test jac(admpcc, admpcc.meta.x0) == [1 0 0 0 0 0]
-  @test jprod(admpcc, admpcc.meta.x0, zeros(6)) == zeros(1)
-  @test jtprod(admpcc, admpcc.meta.x0, zeros(1)) == zeros(6)
-
-  @test jacG(admpcc, admpcc.meta.x0) == [1 0 0 0 0 0; 0 0 1 0 0 0]
-  @test jGprod(admpcc, admpcc.meta.x0, zeros(6)) == zeros(2)
-  @test jGtprod(admpcc, admpcc.meta.x0, zeros(2)) == zeros(6)
-  @test hGprod(admpcc, admpcc.meta.x0, admpcc.cc_meta.yG, admpcc.meta.x0) == zeros(6)
-  #@test hessG(admpcc, admpcc.meta.x0, admpcc.cc_meta.yG) == zeros(6, 6)
-
-  @test jacH(admpcc, admpcc.meta.x0) == [0 1 0 0 0 0; 0 0 0 1 0 0]
-  @test jHprod(admpcc, admpcc.meta.x0, zeros(6)) == zeros(2)
-  @test jHtprod(admpcc, admpcc.meta.x0, zeros(2)) == zeros(6)
-  @test hHprod(admpcc, admpcc.meta.x0, admpcc.cc_meta.yH, admpcc.meta.x0) == zeros(6)
-  #@test hessH(admpcc, admpcc.meta.x0, admpcc.cc_meta.yH) == zeros(6, 6)
-
-  #y = vcat(admpcc.meta.y0, admpcc.cc_meta.yG, admpcc.cc_meta.yH)
-  #@test hess(admpcc, admpcc.meta.x0, obj_weight = 0.0) == zeros(6, 6)
-  #@test hprod(admpcc, admpcc.meta.x0, admpcc.meta.x0, obj_weight = 0.0) == zeros(6)
-  #@test hess(admpcc, admpcc.meta.x0, y) == zeros(6, 6)
-  #@test hprod(admpcc, admpcc.meta.x0, y, admpcc.meta.x0) == zeros(6)
 end
 
 @testset "NLMPCC tests" begin

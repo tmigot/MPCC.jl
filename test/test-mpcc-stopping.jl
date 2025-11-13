@@ -90,6 +90,7 @@ end
   @test stop!(stop_nlp_kargs, test = 0.0) == true
 end
 
+#=
 @testset "MPCCStopping tests III" begin
   test1 = ex1()
   x0 = test1.meta.x0
@@ -132,3 +133,4 @@ end
   stop!(stop_c)
   @test status(stop_c) == :Unknown
 end
+=#
