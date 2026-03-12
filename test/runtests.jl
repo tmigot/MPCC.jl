@@ -223,11 +223,6 @@ end
 end
 
 @testset "MPCCAtX tests" begin
-  if isnothing(_mpcc_stopping_ext)
-    @test_skip "MPCCStoppingExt not loaded; skipping extension-dependent tests"
-    return
-  end
-
   state = MPCCAtX(zeros(10), zeros(0), cGx = [0.0], cHx = [1.0])
 
   @test state.x == zeros(10)
