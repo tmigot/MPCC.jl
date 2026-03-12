@@ -2,6 +2,9 @@ module MPCCStoppingExt
 
 using Stopping, MPCC
 using NLPModels
+using LinearAlgebra
+using LinearOperators
+using SparseArrays
 
 include("MPCCStopping/MPCCState.jl")
 
