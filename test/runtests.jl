@@ -7,6 +7,22 @@ using Stopping
 # This package
 using MPCC
 
+const _mpcc_stopping_ext = Base.get_extension(MPCC, :MPCCStoppingExt)
+
+@testset "MPCCStopping extension loaded" begin
+  @test _mpcc_stopping_ext !== nothing
+end
+
+const MPCCStoppingExt = _mpcc_stopping_ext === nothing ?
+  error("MPCCStoppingExt extension could not be loaded; MPCCStopping-related tests cannot run.") :
+  _mpcc_stopping_ext
+const MPCCAtX = MPCCStoppingExt.MPCCAtX
+const MPCCStopping = MPCCStoppingExt.MPCCStopping
+const _init_max_counters_mpcc = MPCCStoppingExt._init_max_counters_mpcc
+const SStat = MPCCStoppingExt.SStat
+const MStat = MPCCStoppingExt.MStat
+const CStat = MPCCStoppingExt.CStat
+const WStat = MPCCStoppingExt.WStat
 include("problems/bard1.jl")
 include("problems/ex1.jl")
 include("problems/ex1bd.jl")
@@ -164,8 +180,54 @@ end
   @test viol(nlp, t0) == [0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0]
 end
 
+@testset "Sparse Jacobian-Hessian Operator Tests" begin
+  mpcc = bard1()
+  x = copy(mpcc.meta.x0)
+
+  J = jac(mpcc, x)
+  J_rows, J_cols = jac_structure(mpcc)
+  J_vals = jac_coord(mpcc, x)
+  @test J isa SparseMatrixCSC
+  @test J == sparse(J_rows, J_cols, J_vals, mpcc.meta.ncon, mpcc.meta.nvar)
+
+  JG = jacG(mpcc, x)
+  JG_rows, JG_cols = jacG_structure(mpcc)
+  JG_vals = jacG_coord(mpcc, x)
+  @test JG isa SparseMatrixCSC
+  @test JG == sparse(JG_rows, JG_cols, JG_vals, mpcc.cc_meta.ncc, mpcc.meta.nvar)
+
+  JH = jacH(mpcc, x)
+  JH_rows, JH_cols = jacH_structure(mpcc)
+  JH_vals = jacH_coord(mpcc, x)
+  @test JH isa SparseMatrixCSC
+  @test JH == sparse(JH_rows, JH_cols, JH_vals, mpcc.cc_meta.ncc, mpcc.meta.nvar)
+
+  y = vcat(mpcc.meta.y0, mpcc.cc_meta.yG, mpcc.cc_meta.yH)
+  H = hess(mpcc, x, y)
+  H_rows, H_cols = hess_structure(mpcc)
+  H_vals = hess_coord(mpcc, x, y)
+  @test H isa Symmetric
+  @test H.data isa SparseMatrixCSC
+  @test H == Symmetric(sparse(H_rows, H_cols, H_vals, mpcc.meta.nvar, mpcc.meta.nvar), :L)
+  @test Matrix(H) ≈ Diagonal([2.0, 8.0, 0.0, 0.0, 0.0])
+
+  HG = hessG(mpcc, x, mpcc.cc_meta.yG)
+  HG_rows, HG_cols = hessG_structure(mpcc)
+  HG_vals = hessG_coord(mpcc, x, mpcc.cc_meta.yG)
+  @test HG isa Symmetric
+  @test HG.data isa SparseMatrixCSC
+  @test HG == Symmetric(sparse(HG_rows, HG_cols, HG_vals, mpcc.meta.nvar, mpcc.meta.nvar), :L)
+
+  HH = hessH(mpcc, x, mpcc.cc_meta.yH)
+  HH_rows, HH_cols = hessH_structure(mpcc)
+  HH_vals = hessH_coord(mpcc, x, mpcc.cc_meta.yH)
+  @test HH isa Symmetric
+  @test HH.data isa SparseMatrixCSC
+  @test HH == Symmetric(sparse(HH_rows, HH_cols, HH_vals, mpcc.meta.nvar, mpcc.meta.nvar), :L)
+end
+
 @testset "MPCCAtX tests" begin
-  state = MPCCStoppingExt.MPCCAtX(zeros(10), zeros(0), cGx = [0.0], cHx = [1.0])
+  state = MPCCAtX(zeros(10), zeros(0), cGx = [0.0], cHx = [1.0])
 
   @test state.x == zeros(10)
   @test isnan(state.fx)
