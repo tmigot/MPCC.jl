@@ -8,17 +8,21 @@ using Stopping
 using MPCC
 
 const _mpcc_stopping_ext = Base.get_extension(MPCC, :MPCCStoppingExt)
-if !isnothing(_mpcc_stopping_ext)
-  const MPCCStoppingExt = _mpcc_stopping_ext
-  const MPCCAtX = MPCCStoppingExt.MPCCAtX
-  const MPCCStopping = MPCCStoppingExt.MPCCStopping
-  const _init_max_counters_mpcc = MPCCStoppingExt._init_max_counters_mpcc
-  const SStat = MPCCStoppingExt.SStat
-  const MStat = MPCCStoppingExt.MStat
-  const CStat = MPCCStoppingExt.CStat
-  const WStat = MPCCStoppingExt.WStat
+
+@testset "MPCCStopping extension loaded" begin
+  @test _mpcc_stopping_ext !== nothing
 end
 
+const MPCCStoppingExt = _mpcc_stopping_ext === nothing ?
+  error("MPCCStoppingExt extension could not be loaded; MPCCStopping-related tests cannot run.") :
+  _mpcc_stopping_ext
+const MPCCAtX = MPCCStoppingExt.MPCCAtX
+const MPCCStopping = MPCCStoppingExt.MPCCStopping
+const _init_max_counters_mpcc = MPCCStoppingExt._init_max_counters_mpcc
+const SStat = MPCCStoppingExt.SStat
+const MStat = MPCCStoppingExt.MStat
+const CStat = MPCCStoppingExt.CStat
+const WStat = MPCCStoppingExt.WStat
 include("problems/bard1.jl")
 include("problems/ex1.jl")
 include("problems/ex1bd.jl")
