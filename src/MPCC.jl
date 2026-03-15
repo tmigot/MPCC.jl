@@ -185,6 +185,7 @@ export NLMPCC
 @init begin
   @require ADNLPModels = "54578032-b7ea-4c30-94aa-7cbd1cce6c9a" begin
     using ForwardDiff
+    using Symbolics
 
     include("ADMPCC.jl")
 

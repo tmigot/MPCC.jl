@@ -13,9 +13,11 @@ const _mpcc_stopping_ext = Base.get_extension(MPCC, :MPCCStoppingExt)
   @test _mpcc_stopping_ext !== nothing
 end
 
-const MPCCStoppingExt = _mpcc_stopping_ext === nothing ?
-  error("MPCCStoppingExt extension could not be loaded; MPCCStopping-related tests cannot run.") :
-  _mpcc_stopping_ext
+const MPCCStoppingExt =
+  _mpcc_stopping_ext === nothing ?
+  error(
+    "MPCCStoppingExt extension could not be loaded; MPCCStopping-related tests cannot run.",
+  ) : _mpcc_stopping_ext
 const MPCCAtX = MPCCStoppingExt.MPCCAtX
 const MPCCStopping = MPCCStoppingExt.MPCCStopping
 const _init_max_counters_mpcc = MPCCStoppingExt._init_max_counters_mpcc
@@ -71,6 +73,10 @@ end
   lccg, lcch = zeros(2), zeros(2)
   lvar, uvar = fill(-10.0, size(x0)), fill(10.0, size(x0))
   admpcc = ADMPCCModel(G, H, lccg, lcch, f, x0, lvar = lvar, uvar = uvar)
+
+  # Symbolic Jacobian construction may fail for index-based vector functions
+  @test isnothing(admpcc.sym_jacG) || admpcc.sym_jacG isa SymbolicSparseJacobianCache
+  @test isnothing(admpcc.sym_jacH) || admpcc.sym_jacH isa SymbolicSparseJacobianCache
 
   @test obj(admpcc, admpcc.meta.x0) == 6
   @test grad(admpcc, admpcc.meta.x0) == ones(6)
@@ -134,6 +140,28 @@ end
   @test hprod(admpcc, admpcc.meta.x0, admpcc.meta.x0, obj_weight = 0.0) == zeros(6)
   @test hess(admpcc, admpcc.meta.x0, y) == zeros(6, 6)
   @test hprod(admpcc, admpcc.meta.x0, y, admpcc.meta.x0) == zeros(6)
+end
+
+@testset "ADMPCC nonlinear product consistency" begin
+  f = x -> sum(abs2, x)
+  x0 = [0.7, -1.1, 0.3, 0.9, -0.4, 1.2]
+  G(x) = [x[1]^2 + x[2] * x[3]; sin(x[4]) + x[1] * x[6]]
+  H(x) = [exp(x[2]) + x[5]^3; x[1] * x[4] - cos(x[6])]
+  lccg, lcch = zeros(2), zeros(2)
+  lvar, uvar = fill(-10.0, size(x0)), fill(10.0, size(x0))
+  admpcc = ADMPCCModel(G, H, lccg, lcch, f, x0, lvar = lvar, uvar = uvar)
+
+  x = [0.8, -0.7, 0.2, 1.1, -0.5, 0.4]
+  v = [-0.2, 0.3, -0.7, 0.1, 0.6, -0.4]
+  w = [0.9, -0.3]
+
+  JG = jacG(admpcc, x)
+  JH = jacH(admpcc, x)
+
+  @test isapprox(jGprod(admpcc, x, v), JG * v, rtol = 1.0e-10, atol = 1.0e-10)
+  @test isapprox(jGtprod(admpcc, x, w), JG' * w, rtol = 1.0e-10, atol = 1.0e-10)
+  @test isapprox(jHprod(admpcc, x, v), JH * v, rtol = 1.0e-10, atol = 1.0e-10)
+  @test isapprox(jHtprod(admpcc, x, w), JH' * w, rtol = 1.0e-10, atol = 1.0e-10)
 end
 
 @testset "NLMPCC tests" begin
@@ -216,14 +244,16 @@ end
   HG_vals = hessG_coord(mpcc, x, mpcc.cc_meta.yG)
   @test HG isa Symmetric
   @test HG.data isa SparseMatrixCSC
-  @test HG == Symmetric(sparse(HG_rows, HG_cols, HG_vals, mpcc.meta.nvar, mpcc.meta.nvar), :L)
+  @test HG ==
+        Symmetric(sparse(HG_rows, HG_cols, HG_vals, mpcc.meta.nvar, mpcc.meta.nvar), :L)
 
   HH = hessH(mpcc, x, mpcc.cc_meta.yH)
   HH_rows, HH_cols = hessH_structure(mpcc)
   HH_vals = hessH_coord(mpcc, x, mpcc.cc_meta.yH)
   @test HH isa Symmetric
   @test HH.data isa SparseMatrixCSC
-  @test HH == Symmetric(sparse(HH_rows, HH_cols, HH_vals, mpcc.meta.nvar, mpcc.meta.nvar), :L)
+  @test HH ==
+        Symmetric(sparse(HH_rows, HH_cols, HH_vals, mpcc.meta.nvar, mpcc.meta.nvar), :L)
 end
 
 @testset "MPCCAtX tests" begin
