@@ -5,7 +5,16 @@ mutable struct ADMPCCModel{T,S,Si,FG<:Function,FH<:Function} <: AbstractMPCCMode
   cc_counters::MPCCCounters
 
   # Functions
-  G::FG
+  Glinrows::Si
+  Glincols::Si
+  Glinvals::S
+
+  G!::FG
+
+  Hlinrows::Si
+  Hlincols::Si
+  Hlinvals::S
+
   H::FH
 end
 
