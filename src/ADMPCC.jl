@@ -1,4 +1,9 @@
-mutable struct ADMPCCModel{T,S,Si,FG<:Function,FH<:Function} <: AbstractMPCCModel{T,S}
+struct SymbolicSparseJacobianCache{TX,TJ}
+  xvars::TX
+  jac::TJ
+end
+
+mutable struct ADMPCCModel{T,S,Si,FG<:Function,FH<:Function,SG,SH} <: AbstractMPCCModel{T,S}
   nlp::ADNLPModels.ADNLPModel{T,S,Si}
   meta::NLPModelMeta{T,S}
   cc_meta::MPCCModelMeta{T,S}
@@ -7,6 +12,46 @@ mutable struct ADMPCCModel{T,S,Si,FG<:Function,FH<:Function} <: AbstractMPCCMode
   # Functions
   G::FG
   H::FH
+
+  # Symbolic sparse Jacobian caches (or nothing when symbolic generation fails).
+  sym_jacG::SG
+  sym_jacH::SH
+end
+
+function _build_symbolic_sparse_jacobian(fun::Function, nvar::Integer)
+  xvars = collect(Symbolics.variables(:x, 1:nvar))
+  y = fun(xvars)
+  jac = Symbolics.sparsejacobian(y, xvars)
+  return SymbolicSparseJacobianCache(xvars, jac)
+end
+
+function _try_build_symbolic_sparse_jacobian(fun::Function, nvar::Integer)
+  try
+    return _build_symbolic_sparse_jacobian(fun, nvar)
+  catch
+    return nothing
+  end
+end
+
+function _evaluate_symbolic_sparse_jacobian(
+  cache::SymbolicSparseJacobianCache,
+  x::AbstractVector,
+)
+  subs = Dict{Any,Any}()
+  for i = 1:length(cache.xvars)
+    subs[cache.xvars[i]] = x[i]
+  end
+  nzval = similar(x, length(cache.jac.nzval))
+  for i = 1:length(cache.jac.nzval)
+    nzval[i] = Symbolics.value(Symbolics.substitute(cache.jac.nzval[i], subs))
+  end
+  return SparseMatrixCSC(
+    size(cache.jac, 1),
+    size(cache.jac, 2),
+    copy(cache.jac.colptr),
+    copy(cache.jac.rowval),
+    nzval,
+  )
 end
 
 function ADMPCCModel(
@@ -43,7 +88,9 @@ function ADMPCCModel(
   )
   ncc = length(lccG)
   cc_meta = MPCCModelMeta(nvar, ncc, lccG = lccG, lccH = lccH, yG = yG, yH = yH)
-  return ADMPCCModel(nlp, meta, cc_meta, MPCCCounters(), G, H)
+  sym_jacG = _try_build_symbolic_sparse_jacobian(G, nvar)
+  sym_jacH = _try_build_symbolic_sparse_jacobian(H, nvar)
+  return ADMPCCModel(nlp, meta, cc_meta, MPCCCounters(), G, H, sym_jacG, sym_jacH)
 end
 
 for meth in (:obj, :grad!, :objgrad!, :objcons!, :jac_op!, :ghjvprod!, :jth_hprod!)
@@ -122,7 +169,12 @@ end
 
 function jGprod!(nlp::ADMPCCModel, x::AbstractVector, v::AbstractVector, Jv::AbstractVector)
   increment_cc!(nlp, :neval_jGprod)
-  Jv[1:nlp.cc_meta.ncc] .= ForwardDiff.derivative(t -> nlp.G(x + t * v), 0)
+  if !isnothing(nlp.sym_jacG)
+    Jx = _evaluate_symbolic_sparse_jacobian(nlp.sym_jacG, x)
+    mul!(view(Jv, 1:nlp.cc_meta.ncc), Jx, v)
+  else
+    Jv[1:nlp.cc_meta.ncc] .= ForwardDiff.derivative(t -> nlp.G(x + t * v), 0)
+  end
   return Jv
 end
 
@@ -133,13 +185,23 @@ function jGtprod!(
   Jtv::AbstractVector,
 )
   increment_cc!(nlp, :neval_jGtprod)
-  Jtv[1:nlp.meta.nvar] .= ForwardDiff.gradient(x -> dot(nlp.G(x), v), x)
+  if !isnothing(nlp.sym_jacG)
+    Jx = _evaluate_symbolic_sparse_jacobian(nlp.sym_jacG, x)
+    mul!(view(Jtv, 1:nlp.meta.nvar), transpose(Jx), v)
+  else
+    Jtv[1:nlp.meta.nvar] .= ForwardDiff.gradient(x -> dot(nlp.G(x), v), x)
+  end
   return Jtv
 end
 
 function jHprod!(nlp::ADMPCCModel, x::AbstractVector, v::AbstractVector, Jv::AbstractVector)
   increment_cc!(nlp, :neval_jHprod)
-  Jv[1:nlp.cc_meta.ncc] .= ForwardDiff.derivative(t -> nlp.H(x + t * v), 0)
+  if !isnothing(nlp.sym_jacH)
+    Jx = _evaluate_symbolic_sparse_jacobian(nlp.sym_jacH, x)
+    mul!(view(Jv, 1:nlp.cc_meta.ncc), Jx, v)
+  else
+    Jv[1:nlp.cc_meta.ncc] .= ForwardDiff.derivative(t -> nlp.H(x + t * v), 0)
+  end
   return Jv
 end
 
@@ -150,7 +212,12 @@ function jHtprod!(
   Jtv::AbstractVector,
 )
   increment_cc!(nlp, :neval_jHtprod)
-  Jtv[1:nlp.meta.nvar] .= ForwardDiff.gradient(x -> dot(nlp.H(x), v), x)
+  if !isnothing(nlp.sym_jacH)
+    Jx = _evaluate_symbolic_sparse_jacobian(nlp.sym_jacH, x)
+    mul!(view(Jtv, 1:nlp.meta.nvar), transpose(Jx), v)
+  else
+    Jtv[1:nlp.meta.nvar] .= ForwardDiff.gradient(x -> dot(nlp.H(x), v), x)
+  end
   return Jtv
 end
 

@@ -136,6 +136,28 @@ end
   @test hprod(admpcc, admpcc.meta.x0, y, admpcc.meta.x0) == zeros(6)
 end
 
+@testset "ADMPCC nonlinear product consistency" begin
+  f = x -> sum(abs2, x)
+  x0 = [0.7, -1.1, 0.3, 0.9, -0.4, 1.2]
+  G(x) = [x[1]^2 + x[2] * x[3]; sin(x[4]) + x[1] * x[6]]
+  H(x) = [exp(x[2]) + x[5]^3; x[1] * x[4] - cos(x[6])]
+  lccg, lcch = zeros(2), zeros(2)
+  lvar, uvar = fill(-10.0, size(x0)), fill(10.0, size(x0))
+  admpcc = ADMPCCModel(G, H, lccg, lcch, f, x0, lvar = lvar, uvar = uvar)
+
+  x = [0.8, -0.7, 0.2, 1.1, -0.5, 0.4]
+  v = [-0.2, 0.3, -0.7, 0.1, 0.6, -0.4]
+  w = [0.9, -0.3]
+
+  JG = jacG(admpcc, x)
+  JH = jacH(admpcc, x)
+
+  @test isapprox(jGprod(admpcc, x, v), JG * v, rtol = 1.0e-10, atol = 1.0e-10)
+  @test isapprox(jGtprod(admpcc, x, w), JG' * w, rtol = 1.0e-10, atol = 1.0e-10)
+  @test isapprox(jHprod(admpcc, x, v), JH * v, rtol = 1.0e-10, atol = 1.0e-10)
+  @test isapprox(jHtprod(admpcc, x, w), JH' * w, rtol = 1.0e-10, atol = 1.0e-10)
+end
+
 @testset "NLMPCC tests" begin
   f = x -> sum(x)
   x0 = ones(2)
