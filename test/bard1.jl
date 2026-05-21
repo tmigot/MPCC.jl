@@ -95,8 +95,8 @@ function MPCC.jacG_structure!(
 )
   m, n = nlp.meta.ncc, nlp.meta.nvar
   I = ((i, j) for i = 1:m, j = 1:n)
-  rows[1:n*m] .= getindex.(I, 1)[:]
-  cols[1:n*m] .= getindex.(I, 2)[:]
+  rows[1:(n*m)] .= getindex.(I, 1)[:]
+  cols[1:(n*m)] .= getindex.(I, 2)[:]
   return rows, cols
 end
 
@@ -104,7 +104,7 @@ function MPCC.jacG_coord!(nlp::Bard1, x::AbstractVector, vals::AbstractVector)
   m, n = nlp.meta.ncc, nlp.meta.nvar
   #increment!(nlp, :neval_jacG)
   Jx = vcat([3 -1 0 0 0], [-1 0.5 0 0 0], [-1 -1 0 0 0])
-  vals[1:n*m] .= Jx[:]
+  vals[1:(n*m)] .= Jx[:]
   return vals
 end
 
@@ -115,8 +115,8 @@ function MPCC.jacH_structure!(
 )
   m, n = nlp.meta.ncc, nlp.meta.nvar
   I = ((i, j) for i = 1:m, j = 1:n)
-  rows[1:n*m] .= getindex.(I, 1)[:]
-  cols[1:n*m] .= getindex.(I, 2)[:]
+  rows[1:(n*m)] .= getindex.(I, 1)[:]
+  cols[1:(n*m)] .= getindex.(I, 2)[:]
   return rows, cols
 end
 
@@ -127,7 +127,7 @@ function MPCC.jacH_coord!(nlp::Bard1, x::AbstractVector, vals::AbstractVector)
   Jx[1, 1] = 1.0
   Jx[2, 2] = 1.0
   Jx[3, 3] = 1.0
-  vals[1:n*m] .= Jx[:]
+  vals[1:(n*m)] .= Jx[:]
   return vals
 end
 

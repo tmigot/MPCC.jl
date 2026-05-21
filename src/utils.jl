@@ -21,14 +21,14 @@ function viol!(mod::AbstractMPCCModel, x::AbstractVector, c::AbstractVector)
   if ncc > 0
     cG, cH = consG(mod, x), consH(mod, x)
 
-    c[n+ncon+1:n+ncon+ncc] = max.(mod.meta.lccG - cG, 0.0)
-    c[n+ncon+ncc+1:n+ncon+2*ncc] = max.(mod.meta.lccH - cH, 0.0)
-    c[n+ncon+2*ncc+1:n+ncon+3*ncc] = max.(cH .* cG, 0.0)
+    c[(n+ncon+1):(n+ncon+ncc)] = max.(mod.meta.lccG - cG, 0.0)
+    c[(n+ncon+ncc+1):(n+ncon+2*ncc)] = max.(mod.meta.lccH - cH, 0.0)
+    c[(n+ncon+2*ncc+1):(n+ncon+3*ncc)] = max.(cH .* cG, 0.0)
   end
 
   if mod.meta.ncon > 0
     cx = cons_nl(mod, x)
-    c[n+1:n+ncon] = max.(max.(mod.meta.lcon - cx, 0.0), max.(cx - mod.meta.ucon, 0.0))
+    c[(n+1):(n+ncon)] = max.(max.(mod.meta.lcon - cx, 0.0), max.(cx - mod.meta.ucon, 0.0))
   end
 
   c[1:n] = max.(max.(mod.meta.lvar - x, 0.0), max.(x - mod.meta.uvar, 0.0))

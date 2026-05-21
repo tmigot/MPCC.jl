@@ -13,9 +13,11 @@ const _mpcc_stopping_ext = Base.get_extension(MPCC, :MPCCStoppingExt)
   @test _mpcc_stopping_ext !== nothing
 end
 
-const MPCCStoppingExt = _mpcc_stopping_ext === nothing ?
-  error("MPCCStoppingExt extension could not be loaded; MPCCStopping-related tests cannot run.") :
-  _mpcc_stopping_ext
+const MPCCStoppingExt =
+  _mpcc_stopping_ext === nothing ?
+  error(
+    "MPCCStoppingExt extension could not be loaded; MPCCStopping-related tests cannot run.",
+  ) : _mpcc_stopping_ext
 const MPCCAtX = MPCCStoppingExt.MPCCAtX
 const MPCCStopping = MPCCStoppingExt.MPCCStopping
 const _init_max_counters_mpcc = MPCCStoppingExt._init_max_counters_mpcc
@@ -216,14 +218,16 @@ end
   HG_vals = hessG_coord(mpcc, x, mpcc.cc_meta.yG)
   @test HG isa Symmetric
   @test HG.data isa SparseMatrixCSC
-  @test HG == Symmetric(sparse(HG_rows, HG_cols, HG_vals, mpcc.meta.nvar, mpcc.meta.nvar), :L)
+  @test HG ==
+        Symmetric(sparse(HG_rows, HG_cols, HG_vals, mpcc.meta.nvar, mpcc.meta.nvar), :L)
 
   HH = hessH(mpcc, x, mpcc.cc_meta.yH)
   HH_rows, HH_cols = hessH_structure(mpcc)
   HH_vals = hessH_coord(mpcc, x, mpcc.cc_meta.yH)
   @test HH isa Symmetric
   @test HH.data isa SparseMatrixCSC
-  @test HH == Symmetric(sparse(HH_rows, HH_cols, HH_vals, mpcc.meta.nvar, mpcc.meta.nvar), :L)
+  @test HH ==
+        Symmetric(sparse(HH_rows, HH_cols, HH_vals, mpcc.meta.nvar, mpcc.meta.nvar), :L)
 end
 
 @testset "MPCCAtX tests" begin

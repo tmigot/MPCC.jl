@@ -70,7 +70,7 @@ function jac_coord!(nlp::NLMPCC, x::AbstractVector, vals::AbstractVector)
   Gx, Hx = consG(nlp.mod, x), consH(nlp.mod, x)
   A = vcat(jac(nlp.mod, x), JGx, JHx, diagm(0 => Hx) * JGx + diagm(0 => Gx) * JHx)
   m, n = size(A)
-  vals[1:n*m] .= A[:]
+  vals[1:(n*m)] .= A[:]
   return vals
 end
 
@@ -81,8 +81,8 @@ function jac_structure!(
 )
   m, n = nlp.meta.ncon, nlp.meta.nvar
   I = ((i, j) for i = 1:m, j = 1:n)
-  rows[1:n*m] .= getindex.(I, 1)[:]
-  cols[1:n*m] .= getindex.(I, 2)[:]
+  rows[1:(n*m)] .= getindex.(I, 1)[:]
+  cols[1:(n*m)] .= getindex.(I, 2)[:]
   return rows, cols
 end
 
@@ -132,8 +132,12 @@ function hess_coord!(
   ncc, nlc, nvar = nlp.mod.cc_meta.ncc, nlp.mod.meta.ncon, nlp.mod.meta.nvar
   JGx, JHx = jacG(nlp.mod, x), jacH(nlp.mod, x)
   Gx, Hx = consG(nlp.mod, x), consH(nlp.mod, x)
-  lphi = y[nlc+2*ncc+1:nlc+3*ncc]
-  ny = vcat(y[1:nlc], y[nlc+1:nlc+ncc] - lphi .* Hx, y[nlc+ncc+1:nlc+2*ncc] - lphi .* Gx)
+  lphi = y[(nlc+2*ncc+1):(nlc+3*ncc)]
+  ny = vcat(
+    y[1:nlc],
+    y[(nlc+1):(nlc+ncc)] - lphi .* Hx,
+    y[(nlc+ncc+1):(nlc+2*ncc)] - lphi .* Gx,
+  )
   Hx = hess(nlp.mod, x, ny, obj_weight = obj_weight)
   for i = 1:ncc
     Hx += lphi[i] * (JGx[i, :] * JHx[i, :]' + JHx[i, :] * JGx[i, :]')

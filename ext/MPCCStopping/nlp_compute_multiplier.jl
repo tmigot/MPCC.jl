@@ -36,7 +36,7 @@ function Stopping._compute_mutliplier(
   mu, lambda = zeros(n), zeros(nc)
   if (Ib != []) || (Ic != [])
     l = Jc \ (-gx)
-    mu[Ib], lambda[Ic] = l[1:length(Ib)], l[length(Ib)+1:length(l)]
+    mu[Ib], lambda[Ic] = l[1:length(Ib)], l[(length(Ib)+1):length(l)]
   end
 
   return mu, lambda
@@ -93,9 +93,9 @@ function Stopping._compute_mutliplier(
   if (Ib != []) || (Ic != []) || (IG != []) || (IH != [])
     l = Jc \ (-gx)
     mu[Ib], lambda[Ic], etaG[IG], etaH[IH] = l[1:length(Ib)],
-    l[length(Ib)+1:length(Ib)+length(Ic)],
-    l[length(Ib)+length(Ic)+1:length(Ib)+length(Ic)+length(IG)],
-    l[length(Ib)+length(Ic)+length(IG)+1:length(Ib)+length(Ic)+length(IG)+length(IH)]
+    l[(length(Ib)+1):(length(Ib)+length(Ic))],
+    l[(length(Ib)+length(Ic)+1):(length(Ib)+length(Ic)+length(IG))],
+    l[(length(Ib)+length(Ic)+length(IG)+1):(length(Ib)+length(Ic)+length(IG)+length(IH))]
   end
 
   return mu, lambda, etaG, etaH
